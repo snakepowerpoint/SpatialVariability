@@ -1,4 +1,4 @@
-setwd("C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\scripts\\data\\raw")
+setwd("C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\raw")
 
 df = read.csv("CPUE_per_length_per_subarea.csv", header=T) 
 # keep variables we want
@@ -84,5 +84,6 @@ cpue.species.drop0 = lapply(cpue.species.drop0, FUN=function(x){
 })
 
 rm(cpue.subarea, cpue.subarea.non0, cpue.species)
-save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\scripts\\data\\length.RData")
+
+save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\length.RData")
 
