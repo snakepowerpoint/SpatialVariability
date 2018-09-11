@@ -1,4 +1,4 @@
-setwd("C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\scripts\\data")
+setwd("C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\raw")
 
 df = read.csv("CPUE_per_length_per_subarea_AtoD.csv", header=T) # A-D
 lgth = df
