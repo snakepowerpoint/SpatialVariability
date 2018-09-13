@@ -1,4 +1,4 @@
-load(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\scripts\\data\\length.RData")
+load(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\cpue.RData")
 
 ### Taylor's power law
 # compute total CPUE and mean and variance of CPUE
@@ -42,3 +42,5 @@ taylor.coeff = lapply(taylor, FUN=function(y){
     
     return(output)
 })
+
+save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\taylor.RData")
