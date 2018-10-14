@@ -1,4 +1,5 @@
-setwd("C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\raw")
+wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
+setwd(paste0(wd, "data\\raw"))
 
 amo = read.csv("amon.csv", header=F, sep="")
 colnames(amo) = c("Year", paste0("M", 1:12))
@@ -17,5 +18,7 @@ amo = data.frame(Year=rep(amo$Year,2), Quarter=c(rep(1,n),rep(3,n)), AMO=c(amo$Q
 amo = amo[with(amo, order(Year,Quarter)), ]
 rownames(amo) = c()
 
-save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\amo.RData")
+write.csv(amo, file=paste0(wd, "output\\amo.csv"), row.names=FALSE)
+
+#save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\amo.RData")
 
