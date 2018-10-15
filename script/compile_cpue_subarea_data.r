@@ -113,4 +113,4 @@ cpue.data.final$Species = as.character(cpue.data.final$Species)
 cpue.data.final = cpue.data.final[, c("Year", "Quarter", "Subarea", "Species", "x")]
 colnames(cpue.data.final) = c("Year", "Quarter", "Subarea", "Species", "CPUE")
 
-write.csv(cpue.data.final, file=paste0(wd, "output\\compiled_cpue_data.csv"), row.names=FALSE)
+write.csv(cpue.data.final, file=paste0(wd, "data\\compiled_cpue_data.csv"), row.names=FALSE)
