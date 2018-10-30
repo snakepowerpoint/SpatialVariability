@@ -38,8 +38,8 @@ EDM_list = lapply(EDM_list, function(item){
 
 
 # drop temperature
-col_to_drop = c("SST", "CVofSST")
-#col_to_drop = c("SBT", "CVofSBT")
+#col_to_drop = c("SST", "CVofSST")
+col_to_drop = c("SBT", "CVofSBT")
 EDM_list = lapply(EDM_list, FUN = function(item, col_to_drop){
     df = item$data_std
     item$data_std = df[, -which(names(df) %in% col_to_drop)]
@@ -171,6 +171,7 @@ test = lapply(EDM_list, function(item){
     return(item)
 })
 
+
 '''
 #change column names
 test1 = lapply(test, function(item){
@@ -193,14 +194,14 @@ test1 = lapply(test1, function(item){
 '''
 
 # save ccm results
-lapply(test, function(item, which_temp="BT"){
+lapply(test, function(item, which_temp="SST"){
     write.csv(item$ccm, 
               file = paste0(wd, "output\\ccm\\ccm_", item$species, "_", which_temp, ".csv"),
               row.names = FALSE)
 })
 
 # load ccm results
-test = lapply(EDM_list, function(item, which_temp="BT"){
+test = lapply(EDM_list, function(item, which_temp="SST"){
     item$ccm = read.csv(paste0(wd, "output\\ccm\\ccm_", item$species, "_", which_temp, ".csv"),
                         header = TRUE)
         
@@ -208,7 +209,7 @@ test = lapply(EDM_list, function(item, which_temp="BT"){
 })
 
 # keep significant lagged terms
-test1 = lapply(test, function(item){
+test1 = lapply(test, function(item, min_count = 100*0.95){
     # keep lags which pass the kendall's tau test and t-test, and sort lags by CCM rho
     ccm_sig_lag = subset(item$ccm, subset = item$ccm$kendall.tau < 0.05 & item$ccm$significance < 0.05)
     ccm_sig_lag_count = with(ccm_sig_lag, 
@@ -221,11 +222,11 @@ test1 = lapply(test, function(item){
                                           mean))
     ccm_sig_lag_count = cbind(ccm_sig_lag_count, ccm_sig_lag_meah_rho$x)
     names(ccm_sig_lag_count) = c("target", "tar.lag", "count", "rho")
+    
+    ccm_sig_lag_count = ccm_sig_lag_count[ccm_sig_lag_count$count >= min_count, ]
     ccm_sig_lag_count = ccm_sig_lag_count[order(ccm_sig_lag_count$target,
-                                                ccm_sig_lag_count$count,
                                                 ccm_sig_lag_count$rho,
                                                 decreasing = TRUE), ]
-    ccm_sig_lag_count = subset(ccm_sig_lag_count, subset = ccm_sig_lag_count$count >= 95)
     
     # find the one having maximal rho
     ccm_sig_lag_count = split(ccm_sig_lag_count, f = ccm_sig_lag_count$target, drop = TRUE)
@@ -412,7 +413,7 @@ plotSmapCoeff = function(data_of_coeff, lag_of_var, species=NULL,
     return(NULL)
 }
 
-lapply(test1, function(item, which_temp="BT"){
+lapply(test1, function(item, which_temp="SST"){
     if (is.na(item$Smap1)){
         return(NULL)
     }
