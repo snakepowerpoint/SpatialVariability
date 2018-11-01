@@ -47,8 +47,3 @@ colnames(bottomT) = c("Year", "Quarter", "MeanBT", "CVofBT")
 bottomT = bottomT[order(bottomT$Year), ]
 
 write.csv(bottomT, file=paste0(wd, "output\\bottomT.csv"), row.names=FALSE)
-
-
-rm(rawT, files, meanT, cvT)
-save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\bottomT.RData")
-

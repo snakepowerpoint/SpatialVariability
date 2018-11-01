@@ -83,31 +83,3 @@ write.csv(age.data.final, file=paste0(wd, "data\\compiled_age_data.csv"), row.na
 
 
 
-
-
-
-### Legacy
-# sum up CPUE of each age class according to year and quarter
-age.species.drop0 = lapply(age.species.drop0, FUN=function(x){
-    data = data.frame(x)
-    output = with(data, aggregate(cbind(Age_0, Age_1, Age_2, Age_3, Age_4, Age_5, Age_6, Age_7, Age_8, Age_9, Age_10),
-                                  by=list(Year=Year, Quarter=Quarter), FUN=sum))
-    output = with(output, output[order(Year, Quarter), ])
-    
-    return(output)
-})
-
-age.species.drop0 = lapply(age.species.drop0, FUN=function(x){
-    data = data.frame(x)
-    Shannon.age = apply(data[, 3:13], 1, FUN=function(x){
-        p = x/sum(x, na.rm=T)
-        sum(-p*log(p), na.rm=T)
-    })
-    cbind(data, Shannon.age)
-})
-
-
-rm(age, age.subarea, age.subarea.non0, age.species)
-save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\age.RData")
-
-

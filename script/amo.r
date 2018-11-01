@@ -20,5 +20,3 @@ rownames(amo) = c()
 
 write.csv(amo, file=paste0(wd, "output\\amo.csv"), row.names=FALSE)
 
-#save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\amo.RData")
-
