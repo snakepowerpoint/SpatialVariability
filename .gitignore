@@ -1,5 +1,6 @@
 #customized
 data/raw/
+legacy/
 
 # History files
 .Rhistory
