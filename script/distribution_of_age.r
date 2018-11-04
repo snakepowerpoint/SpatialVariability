@@ -22,7 +22,7 @@ library(ggplot2)
 library(maps)
 
 # plot function
-plot.map = function(data){
+plot.map = function(data, species){
     # map
     mp = fortify(map(fill = TRUE, plot = FALSE))
     
@@ -51,11 +51,16 @@ plot.map = function(data){
                         legend.text = element_text(size = 10),
                         legend.title = element_text(size = 14),
                         panel.border = element_rect(colour = "black", fill = NA, size = 1.5)))
+        ggsave(filename = paste0(species, age, ".eps"),
+               path = paste0(wd, "output\\figures\\suppl"), 
+               device = "eps")
     }
 }
 
-ch = subset(age, subset = age$Species == "Clupea harengus")
-plot.map(ch)
+species = as.character(unique(age$Species))
+for (sp in species){
+    plot.map(data = subset(age, subset = age$Species == sp), species = sp)
+}
 
 
 
@@ -76,6 +81,7 @@ ymax <- max(test$lat) + 2
 zmin <- min(test[, grep("Age", names(test))])
 zmax <- max(test[, grep("Age", names(test))])
 
+#plot map
 Amap <- ggplot() + 
     geom_polygon(aes(x = long, y = lat, group = group), data = mp1, fill = "grey", colour = "grey") + 
     coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax)) + 
@@ -87,7 +93,7 @@ Amap <- ggplot() +
     coord_fixed(xlim = c(xmin, xmax), ylim = c(ymin, ymax), ratio = 0.8) + 
     theme_bw()
 
-#correct
+#add point
 tit <- bquote(italic(.(paste0(unique(test$Species), ','))) ~ 'age 0')
 Amap + geom_point(data = test, aes(x = lon, y = lat, size = Age_0)) + 
     scale_size(range = c(0,6)) + 
