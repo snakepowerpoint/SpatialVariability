@@ -1,7 +1,6 @@
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
 setwd(paste0(wd, "output\\smap"))
 
-library(xlsx)
 data = read.csv("Smap_abundance_coefficients_vs_b.csv", header = TRUE)
 data = na.omit(data)
 data = subset(data, subset = data$S.map.rho > 0.05)
@@ -22,3 +21,7 @@ rect(xleft = 2, ybottom = 0,
 rect(xleft = min(data$b)-0.2, ybottom = min(data$abundance_coeff)-0.05, 
      xright = 2, ytop = 0,
      col= rgb(col,col,col,alpha=0.1), border = 'transparent')
+
+# ggplot
+library(ggplot2)
+
