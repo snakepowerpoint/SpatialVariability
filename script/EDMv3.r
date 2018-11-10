@@ -1,5 +1,4 @@
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
-#load(file=paste0(wd, "data\\compiledDataForEDM.RData"))
 setwd(paste0(wd, "output"))
 
 library(Rcpp)
@@ -38,8 +37,8 @@ EDM_list = lapply(EDM_list, function(item){
 
 
 # drop temperature
-#col_to_drop = c("SST", "CVofSST")
-col_to_drop = c("SBT", "CVofSBT")
+col_to_drop = c("SST", "CVofSST")
+#col_to_drop = c("SBT", "CVofSBT")
 EDM_list = lapply(EDM_list, FUN = function(item, col_to_drop){
     df = item$data_std
     item$data_std = df[, -which(names(df) %in% col_to_drop)]
@@ -158,7 +157,7 @@ determineCausality = function(data, dim.list, species,
 }
 
 # run CCM 100 times to find the best lag for each variable
-test = lapply(EDM_list, function(item){
+EDM_list = lapply(EDM_list, function(item){
     item$ccm = data.frame(matrix(0, nrow = 0, ncol = 10))
     for (i in 1:100){
         ccm_result = determineCausality(data = item$data_std[, -c(1,2)], 
@@ -171,37 +170,15 @@ test = lapply(EDM_list, function(item){
     return(item)
 })
 
-
-'''
-#change column names
-test1 = lapply(test, function(item){
-    var.name = c("Year", "Quarter", "CV.CPUE", "AgeDiversity", "Abundance", "AMO", 
-                 "SBT", "CVofSBT",
-                 "SST", "CVofSST")
-    
-    names(item$data) = var.name
-    names(item$data_std) = var.name[-c(9, 10)]
-    
-    return(item)
-})
-
-test1 = lapply(test1, function(item){
-    item$ccm$target[item$ccm$target=="Age diversity"] = "AgeDiversity"
-    item$ccm$target[item$ccm$target=="CV of SBT"] = "CVofSBT"
-    
-    return(item)
-})
-'''
-
 # save ccm results
-lapply(test, function(item, which_temp="SST"){
+lapply(EDM_list, function(item, which_temp="BT"){
     write.csv(item$ccm, 
               file = paste0(wd, "output\\ccm\\ccm_", item$species, "_", which_temp, ".csv"),
               row.names = FALSE)
 })
 
 # load ccm results
-test = lapply(EDM_list, function(item, which_temp="SST"){
+EDM_list = lapply(EDM_list, function(item, which_temp="BT"){
     item$ccm = read.csv(paste0(wd, "output\\ccm\\ccm_", item$species, "_", which_temp, ".csv"),
                         header = TRUE)
         
@@ -209,7 +186,7 @@ test = lapply(EDM_list, function(item, which_temp="SST"){
 })
 
 # keep significant lagged terms
-test1 = lapply(test, function(item, min_count = 100*0.95){
+EDM_list = lapply(EDM_list, function(item, min_count = 100*0.95){
     # keep lags which pass the kendall's tau test and t-test, and sort lags by CCM rho
     ccm_sig_lag = subset(item$ccm, subset = item$ccm$kendall.tau < 0.05 & item$ccm$significance < 0.05)
     ccm_sig_lag_count = with(ccm_sig_lag, 
@@ -238,9 +215,8 @@ test1 = lapply(test, function(item, min_count = 100*0.95){
     return(item)
 })
 
-
 # show all significant lagged variables
-lapply(test1, function(item){
+lapply(EDM_list, function(item){
     
     return(item$ccm_most_significant)
 })
@@ -257,9 +233,9 @@ feasibleCVEmbedding = function(item){
     return(item)
 }
 
-test1 = lapply(test1, feasibleCVEmbedding)
+EDM_list = lapply(EDM_list, feasibleCVEmbedding)
 # check if each species has feasible embeddings
-lapply(test1, function(item){return(item$E_feasible)})  #Sprattus sprattus
+lapply(EDM_list, function(item){return(item$E_feasible)})  #Sprattus sprattus
 
 ### generate a data frame corresponding to lagged variables for S-map analysis 
 generateSmapData = function(item){
@@ -292,7 +268,7 @@ generateSmapData = function(item){
     return(item)
 }
 
-test1 = lapply(test1, generateSmapData)
+EDM_list = lapply(EDM_list, generateSmapData)
 
 
 ### perform S-map
@@ -328,7 +304,7 @@ performSmap = function(data_for_smap){
     return(list(coefficients = coeff, rho = round(block_lnlp_output$rho, 2)))
 }
 
-test1 = lapply(test1, function(item){
+EDM_list = lapply(EDM_list, function(item){
     if (is.na(item$Smap1)){
         return(item)
     }
@@ -413,7 +389,7 @@ plotSmapCoeff = function(data_of_coeff, lag_of_var, species=NULL,
     return(NULL)
 }
 
-lapply(test1, function(item, which_temp="SST"){
+lapply(EDM_list, function(item, which_temp="BT", mode="series"){
     if (is.na(item$Smap1)){
         return(NULL)
     }
@@ -428,44 +404,74 @@ lapply(test1, function(item, which_temp="SST"){
         
         lag_of_var = as.numeric(colSums(is.na(data_for_smap)))
         species = item$species
-        mode = c("boxplot")
         rho = item[[smap_model_index[i]]]$rho
         
         plotSmapCoeff(data_of_coeff = data_of_coeff, lag_of_var = lag_of_var,
-                      species = species, mode = "boxplot", rho = rho)
+                      species = species, mode = mode, rho = rho)
         ggsave(paste0(wd, "output\\smap\\smap_", mode, species, i, "_", which_temp, ".png"),
                width = 9, height = 6, units = "in")
+        ggsave(paste0(wd, "output\\smap\\smap_", mode, species, i, "_", which_temp, ".eps"))
     }
     
     return(NULL)
 })
 
 # mean of S-map coefficients over time
-lapply(test1, function(item){
+smap_results_list = lapply(EDM_list, function(item){
     smap_model_index = grep("Smap", names(item))
+    
+    meanSmap = list()
     for (idx in 1:length(smap_model_index)){
         if (length(item[[smap_model_index[idx]]]) > 1){
-            meanSmap = colMeans(item[[smap_model_index[idx]]]$coefficients)
-            
-            return(meanSmap)
+            meanSmap[[idx]] = colMeans(item[[smap_model_index[idx]]]$coefficients, na.rm = TRUE)
         }
     }
+    
+    return(meanSmap)
 })
 
-lapply(test1, function(item){
+# dimension of the system
+lapply(EDM_list, function(item){
+    
     return(item$E_feasible)
 })
 
-### robustness test on S-map 
-smapRobustTest = function(item){
-    
-    return(item)
+# store S-map coefficients as data frame
+library(gtools)
+
+smap_results_df = data.frame()
+for (species in smap_results_list){
+    for (list in species){
+        data = data.frame(as.list(list))
+        smap_results_df = smartbind(smap_results_df, data)
+    }
 }
 
-# to do list
+model_names = c()
+for (idx in 1:length(smap_results_list)){
+    if (length(smap_results_list[[idx]]) > 0){
+        num_model = length(smap_results_list[[idx]])
+        model_name = paste0(names(smap_results_list)[idx], 1:num_model)
+        model_names = c(model_names, model_name)
+    }
+}
 
-lags
-robustness test
+smap_results_df$model_name = model_names
+row.names(smap_results_df) = NULL
+
+
+
+### robustness test on S-map
+source(paste0(wd, "script\\robustness_test_function.r"))
+
+john = EDM_list$`Melanogrammus aeglefinus`$data_std
+robust(data = john[, -c(1,2)], dim.cv = 4, lags = c(7,6,7,4,4))
+
+lapply(EDM_list, FUN = function(species){
+    data = species$data_std[, -c(1,2)] #not all columns
+    
+    
+})
 
 
 
