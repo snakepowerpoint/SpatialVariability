@@ -301,7 +301,8 @@ performSmap = function(data_for_smap){
     coeff = data.frame(block_lnlp_output$smap_coefficients[[1]])  # s-map coefficient
     colnames(coeff) = c(colnames(data), "Constant")
     
-    return(list(coefficients = coeff, rho = round(block_lnlp_output$rho, 2)))
+    return(list(coefficients = coeff, rho = round(block_lnlp_output$rho, 2),
+                theta = round(theta.opt, 2)))
 }
 
 EDM_list = lapply(EDM_list, function(item){
@@ -316,6 +317,7 @@ EDM_list = lapply(EDM_list, function(item){
         
         item[[smap_model_index[i]]]$coefficients = smap_result_list$coefficients
         item[[smap_model_index[i]]]$rho = smap_result_list$rho
+        item[[smap_model_index[i]]]$theta = smap_result_list$theta
     }
     
     return(item)
@@ -424,6 +426,9 @@ smap_results_list = lapply(EDM_list, function(item){
     for (idx in 1:length(smap_model_index)){
         if (length(item[[smap_model_index[idx]]]) > 1){
             meanSmap[[idx]] = colMeans(item[[smap_model_index[idx]]]$coefficients, na.rm = TRUE)
+            meanSmap[[idx]] = data.frame(t(meanSmap[[idx]]))
+            meanSmap[[idx]]$rho = item[[smap_model_index[idx]]]$rho
+            meanSmap[[idx]]$theta = item[[smap_model_index[idx]]]$theta
         }
     }
     
@@ -447,6 +452,12 @@ for (species in smap_results_list){
     }
 }
 
+variables = c("AgeDiversity", "Abundance", "AMO", 
+              "SBT", "CVofSBT", "SST", "CVofSST", "theta", "rho")
+order.var = variables[sort(match(names(smap_results_df), variables))]
+smap_results_df = smap_results_df[, order.var, drop = FALSE]
+smap_results_df = as.data.frame(apply(smap_results_df, 2, round, digits = 4))
+
 model_names = c()
 for (idx in 1:length(smap_results_list)){
     if (length(smap_results_list[[idx]]) > 0){
@@ -459,24 +470,57 @@ for (idx in 1:length(smap_results_list)){
 smap_results_df$model_name = model_names
 row.names(smap_results_df) = NULL
 
+#write.csv(x = smap_results_df, 
+#          file = paste0(wd, "output\\smap\\mean_coefficients_", "BT", ".csv"))
+
 
 
 ### robustness test on S-map
 source(paste0(wd, "script\\robustness_test_function.r"))
 
-john = EDM_list$`Melanogrammus aeglefinus`$data_std
-robust(data = john[, -c(1,2)], dim.cv = 4, lags = c(7,6,7,4,4))
-
-lapply(EDM_list, FUN = function(species){
-    data = species$data_std[, -c(1,2)] #not all columns
+robustness_list = lapply(EDM_list, FUN = function(species){
+    data = species$data_std[, -c(1,2)] # exclude colunm "Year" and "Quarter"
     
-    
+    if (nrow(species$E_feasible) > 0){
+        dim.cv = species$E_feasible$peaks[1]
+        vars = species$ccm_most_significant$target
+        vars = as.character(vars)
+        lags = species$ccm_most_significant$tar.lag
+        lags = abs(lags)
+        
+        data = subset(data, select = c("CV.CPUE", vars))
+        
+        robust(data, dim.cv = dim.cv, lags = lags)
+    }
 })
+
+robustness_list = lapply(robustness_list, FUN=function(data){
+    if (is.data.frame(data)){
+        variables = c("AgeDiversity", "Abundance", "AMO", 
+                      "SBT", "CVofSBT", "SST", "CVofSST", "theta", "rho")
+        order.var = variables[sort(match(names(data), variables))]
+        data = data[, order.var, drop = FALSE]
+        
+        return(round(data, digits = 4))
+    }
+    
+    else {return(NULL)}
+})
+
+for (idx in 1:length(robustness_list)){
+    write.csv(x = robustness_list[[idx]], 
+              file = paste0(wd, "output\\robustness_test\\", names(robustness_list)[idx],
+                            "_BT", ".csv"),
+              row.names = FALSE)
+}
 
 
 
 
 ### Appendix
+john = EDM_list$`Melanogrammus aeglefinus`$data_std
+robust(data = john[, -c(1,2)], dim.cv = 4, lags = c(7,6,7,4,4))
+
 #species name
 "
 Clupea harengus
