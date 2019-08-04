@@ -129,6 +129,7 @@ result.ss = merge(result.ss, sst, by=c("Year", "Quarter"))
 result.ssp = merge(result.ssp, sst, by=c("Year", "Quarter"))
 result.te = merge(result.te, sst, by=c("Year", "Quarter"))
 
+
 # save data
 species = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus",
             "Merlangius merlangus", "Pleuronectes platessa", "Pollachius virens",

@@ -1,6 +1,7 @@
 #customized
 data/raw/
 legacy/
+output/figures/
 
 # History files
 .Rhistory
