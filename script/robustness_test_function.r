@@ -47,14 +47,21 @@ robust = function(data, dim.cv, lags){
         coeff = data.frame(block_lnlp_output$smap_coefficients[[1]])  # s-map coefficient
         coeff.m = colMeans(coeff[, -c(1, dim(coeff)[2]), drop = FALSE], na.rm = T)
         
+        # S-map coefficients
         x1 = x
         x1[which(x1==0)] = NA
         x1[which(x1==1)] = coeff.m
         
-        c(x1, theta.opt, block_lnlp_output$rho)
+        rho = block_lnlp_output$rho
+        # test on the significance of rho
+        n_pred = block_lnlp_output$num_pred
+        t = rho*sqrt(n_pred-2)/sqrt(1-rho^2)  
+        pvalue = 2*pt(-abs(t), df = n_pred-2)
+        
+        c(x1, theta.opt, rho, pvalue)  # c(coefficients, theta, rho, pvalue)
     })
     output = data.frame(t(coeff.mean))
-    colnames(output) = c(names(data)[-1], 'theta', 'rho')
+    colnames(output) = c(names(data)[-1], 'theta', 'rho', 'pvalue')
     
     return(output)
 }

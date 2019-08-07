@@ -35,7 +35,6 @@ EDM_list = lapply(EDM_list, function(item){
     return(item)
 })
 
-
 # drop temperature
 col_to_drop = c("SST", "CVofSST")
 #col_to_drop = c("SBT", "CVofSBT")
@@ -301,8 +300,17 @@ performSmap = function(data_for_smap){
     coeff = data.frame(block_lnlp_output$smap_coefficients[[1]])  # s-map coefficient
     colnames(coeff) = c(colnames(data), "Constant")
     
-    return(list(coefficients = coeff, rho = round(block_lnlp_output$rho, 2),
-                theta = round(theta.opt, 2)))
+    rho = round(block_lnlp_output$rho, 2)
+    
+    # test on the significance of rho
+    n_pred = block_lnlp_output$num_pred
+    t = rho*sqrt(n_pred-2)/sqrt(1-rho^2)  
+    pvalue = 2*pt(-abs(t), df = n_pred-2)
+    
+    theta = round(theta.opt, 2)
+    
+    return(list(coefficients = coeff, rho = rho, pvalue = pvalue,
+                theta = theta))
 }
 
 EDM_list = lapply(EDM_list, function(item){
@@ -317,6 +325,7 @@ EDM_list = lapply(EDM_list, function(item){
         
         item[[smap_model_index[i]]]$coefficients = smap_result_list$coefficients
         item[[smap_model_index[i]]]$rho = smap_result_list$rho
+        item[[smap_model_index[i]]]$pvalue = smap_result_list$pvalue
         item[[smap_model_index[i]]]$theta = smap_result_list$theta
     }
     
@@ -428,6 +437,7 @@ smap_results_list = lapply(EDM_list, function(item){
             meanSmap[[idx]] = colMeans(item[[smap_model_index[idx]]]$coefficients, na.rm = TRUE)
             meanSmap[[idx]] = data.frame(t(meanSmap[[idx]]))
             meanSmap[[idx]]$rho = item[[smap_model_index[idx]]]$rho
+            meanSmap[[idx]]$pvalue = item[[smap_model_index[idx]]]$pvalue
             meanSmap[[idx]]$theta = item[[smap_model_index[idx]]]$theta
         }
     }
@@ -453,7 +463,7 @@ for (species in smap_results_list){
 }
 
 variables = c("AgeDiversity", "Abundance", "AMO", 
-              "SBT", "CVofSBT", "SST", "CVofSST", "theta", "rho")
+              "SBT", "CVofSBT", "SST", "CVofSST", "theta", "rho", "pvalue")
 order.var = variables[sort(match(names(smap_results_df), variables))]
 smap_results_df = smap_results_df[, order.var, drop = FALSE]
 smap_results_df = as.data.frame(apply(smap_results_df, 2, round, digits = 4))
@@ -497,7 +507,7 @@ robustness_list = lapply(EDM_list, FUN = function(species){
 robustness_list = lapply(robustness_list, FUN=function(data){
     if (is.data.frame(data)){
         variables = c("AgeDiversity", "Abundance", "AMO", 
-                      "SBT", "CVofSBT", "SST", "CVofSST", "theta", "rho")
+                      "SBT", "CVofSBT", "SST", "CVofSST", "theta", "rho", "pvalue")
         order.var = variables[sort(match(names(data), variables))]
         data = data[, order.var, drop = FALSE]
         
