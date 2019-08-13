@@ -134,8 +134,8 @@ determineCausality = function(data, dim.list, species, lags = 8, num_samples = 1
     library_var = colnames(data)[1]
     max_time = dim(data)[1]  # number of data points
     for (idx in 2:length(data)){
-        name_var = colnames(data)[idx]  # target variable
-        E = dim.list[[name_var]]$peak[1]  # E of target variable
+        target_var = colnames(data)[idx]  # target variable
+        E = dim.list[[target_var]]$peak[1]  # E of target variable
         
         for (lag in -lags:0){
             cv_x <- ccm(data, E = E, tp = lag, lib_sizes = c(seq(E, max_time, 3), max_time),
@@ -162,3 +162,83 @@ determineCausality = function(data, dim.list, species, lags = 8, num_samples = 1
     
     return(output) 
 }
+
+
+
+### S-map
+## generate a data frame corresponding to lagged variables for S-map analysis 
+generateSmapData = function(item, data, lib_var){
+    num_Smap_model = length(item$E_feasible$peaks)
+    if (num_Smap_model < 1){
+        item$Smap1 = NA
+        return(item)
+    }
+    
+    name_Smap_model = paste0("Smap", 1:num_Smap_model)
+    num_sample = dim(data)[1]
+    num_variable = item$E_feasible$peaks
+    
+    ccm_result = item$ccm_most_significant
+    ccm_result = ccm_result[order(ccm_result$rho, decreasing = TRUE), ]
+    
+    for (i in 1:num_Smap_model){
+        item[[name_Smap_model[i]]] = list()
+        item[[name_Smap_model[i]]]$data = data.frame(matrix(0, nrow = num_sample, ncol = 0))
+        item[[name_Smap_model[i]]]$data[, lib_var] = data[lib_var]
+        
+        for (idx_var in 1:(num_variable[i]-1)){
+            lags = abs(ccm_result$tar.lag[idx_var])
+            vars = as.character(ccm_result$target[idx_var])
+            item[[name_Smap_model[i]]]$data[, vars] = c(rep(NA,lags), data[, vars][1:(num_sample-lags)])
+        }
+    }
+    
+    return(item)
+}
+
+# function to perform S-map analysis
+performSmap = function(data_for_smap){
+    data = data.frame(data_for_smap)
+    
+    # determine the optimal theta (non-linearity parameter)
+    theta = c(0, 1e-04, 3e-04, 0.001, 0.003, 0.01, 
+              0.03, 0.1, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8)
+    rho.theta = data.frame(matrix(0, length(theta), 2))
+    colnames(rho.theta) = c('theta', 'rho')
+    rho.theta[, 'theta'] = theta
+    
+    # compute rho for each S-map model with different theta
+    n_theta = length(theta)
+    for (i in 1:n_theta){
+        block_lnlp_output <- block_lnlp(
+            data, columns = c(1:dim(data)[2]), target_column = 1, tp = 1,
+            method = "s-map", num_neighbors = 0, stats_only = F,
+            theta = rho.theta[i, 'theta'], save_smap_coefficients = T
+        )
+        rho.theta[i, "rho"] = block_lnlp_output$rho
+    }
+    theta.opt = rho.theta$theta[which.max(rho.theta$rho)]
+    
+    block_lnlp_output <- block_lnlp(
+        data, columns = c(1:dim(data)[2]), target_column = 1, tp = 1, 
+        method = "s-map", num_neighbors = 0, stats_only = F, 
+        theta = theta.opt, save_smap_coefficients = T
+    )
+    
+    # The first E columns are for the E lags or causal variables,
+    # while the (E+1)th column is the constant
+    coeff = data.frame(block_lnlp_output$smap_coefficients[[1]])  # s-map coefficient
+    colnames(coeff) = c(colnames(data), "Constant")
+    
+    rho = round(block_lnlp_output$rho, 2)
+    
+    # test on the significance of rho
+    n_pred = block_lnlp_output$num_pred
+    t = rho*sqrt(n_pred-2)/sqrt(1-rho^2)  
+    pvalue = 2*pt(-abs(t), df = n_pred-2)
+    
+    theta = round(theta.opt, 2)
+    
+    return(list(coefficients = coeff, rho = rho, pvalue = pvalue, theta = theta))
+}
+

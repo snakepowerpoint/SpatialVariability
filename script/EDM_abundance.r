@@ -17,7 +17,7 @@ EDM_lib_var = lapply(EDM_list, FUN = function(item){
 # Age diversity ~ Spatial CV, Abundance, AMO, SBT/SST, CV of SBT/SST
 lags = 8
 time_ccm = 100
-library_var = "AgeDiversity"
+library_var = "Abundance"
 
 ########## Warning!
 # This step takes much time. 
