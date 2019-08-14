@@ -4,9 +4,14 @@ setwd(paste0(wd, "script"))
 source("EDM.r")
 
 
+
 ### Simplex projection to determine embedding dimension
+`%ni%` <- Negate(`%in%`)
+
+dataset = "data_std"
 EDM_lib_var = lapply(EDM_list, FUN = function(item){
-    data = subset(item$data_std, select=-c(Year, Quarter))
+    data = item[[dataset]]
+    data = subset(data, select=names(data) %ni% c("Year", "Quarter"))
     item$E = computeEmbedding(data, show_result = FALSE)
     
     return(item)
@@ -26,8 +31,8 @@ library_var = "Abundance"
 ########## Warning!
 # run CCM 100 times to find the best lag for each variable
 EDM_lib_var = lapply(EDM_lib_var, function(item, lib_var=library_var, lag=lags, t_ccm=time_ccm){
-    data = item$data_std[, -c(1, 2)]
-    `%ni%` <- Negate(`%in%`)
+    data = item[[dataset]]
+    data = subset(data, select=names(data) %ni% c("Year", "Quarter"))
     data = cbind(data[lib_var], subset(data, select=names(data) %ni% lib_var))
     
     item$ccm = data.frame(matrix(0, nrow = 0, ncol = 10))
@@ -61,7 +66,7 @@ EDM_lib_var = lapply(EDM_lib_var, function(item){
 
 
 ## keep significant lagged terms
-EDM_lib_var = lapply(EDM_lib_var, function(item, min_count = 100*0.95){
+EDM_lib_var = lapply(EDM_lib_var, function(item, min_count = time_ccm*0.95){
     # keep lags which pass the kendall's tau test and t-test, and sort lags by its CCM rho
     ccm_sig_lag = subset(item$ccm, subset = item$ccm$kendall.tau < 0.05 & item$ccm$significance < 0.05)
     ccm_sig_lag_count = with(
@@ -133,7 +138,7 @@ lapply(EDM_lib_var, function(item){return(item$E_feasible)})
 ### S-map
 # generate a data frame corresponding to lagged variables for S-map analysis 
 EDM_lib_var = lapply(EDM_lib_var, FUN=function(item, lib_var=library_var){
-    data = item$data_std
+    data = item[[dataset]]
     generateSmapData(item, data=data, lib_var=lib_var)
 })
 
@@ -166,10 +171,11 @@ EDM_lib_var = lapply(EDM_lib_var, function(item){
 #             'AMO', 'SBT'(SST), 'CV of BT'(CV of SST))
 # color: yellow, red, green, blue, light blue, purple : c(7,2,3,4,5,6)
 # shape: cross, circle(s), circle, diamond(s), triangle(s), triangle: c(4,21,1,23,24,2)
-
+variables = c("CV.CPUE", "AgeDiversity", "Abundance", "AMO", 
+              "SBT", "CVofSBT", "SST", "CVofSST")
 cl = c(7,2,3,4,5,6,5,6)
 sh = c(4,21,1,23,24,2,24,2)
-plot_mode = "series"
+plot_mode = "box"
 
 # directory for saving S-map results
 subpath = paste0("output\\smap\\", library_var, "\\")
@@ -245,8 +251,7 @@ for (species in smap_results_list){
 }
 
 # re-arrange columns
-variables = c("CV.CPUE", "AgeDiversity", "Abundance", "AMO", 
-              "SBT", "CVofSBT", "SST", "CVofSST", "theta", "rho", "pvalue")
+variables = c(variables, "theta", "rho", "pvalue")
 order.var = variables[sort(match(names(smap_results_df), variables))]
 smap_results_df = smap_results_df[, order.var, drop = FALSE]
 smap_results_df = as.data.frame(apply(smap_results_df, 2, round, digits = 4))
@@ -281,7 +286,9 @@ setwd(paste0(wd, 'script'))
 source("robustness_test.r")
 
 robustness_list = lapply(EDM_lib_var, FUN=function(species, lib_var=library_var){
-    data = species$data_std[, -c(1,2)] # exclude colunm "Year" and "Quarter"
+    # exclude colunm of "Year" and "Quarter"
+    data = species[[dataset]]
+    data = subset(data, select=names(data) %ni% c("Year", "Quarter"))
     
     if (nrow(species$E_feasible) > 0){
         dim_lib_var = species$E_feasible$peaks[1]
@@ -298,8 +305,6 @@ robustness_list = lapply(EDM_lib_var, FUN=function(species, lib_var=library_var)
 
 robustness_list = lapply(robustness_list, FUN=function(data){
     if (is.data.frame(data)){
-        variables = c("CV.CPUE", "AgeDiversity", "Abundance", "AMO", 
-                      "SBT", "CVofSBT", "SST", "CVofSST", "theta", "rho", "pvalue")
         order.var = variables[sort(match(names(data), variables))]
         data = data[, order.var, drop = FALSE]
         

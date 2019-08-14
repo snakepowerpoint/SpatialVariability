@@ -5,7 +5,6 @@ library(rEDM)
 
 
 ### Data preparation
-wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
 setwd(paste0(wd, "output"))
 
 species = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus",
