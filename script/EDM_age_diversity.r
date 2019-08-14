@@ -167,14 +167,14 @@ EDM_lib_var = lapply(EDM_lib_var, function(item){
 
 ### plot S-map coefficients
 # give each variable a unique color and shape
-# variable: c('spatial CV', 'age diversity','abundance',
+# variable: c('F', 'spatial CV', 'age diversity','abundance',
 #             'AMO', 'SBT'(SST), 'CV of BT'(CV of SST))
 # color: yellow, red, green, blue, light blue, purple : c(7,2,3,4,5,6)
 # shape: cross, circle(s), circle, diamond(s), triangle(s), triangle: c(4,21,1,23,24,2)
-variables = c("CV.CPUE", "AgeDiversity", "Abundance", "AMO", 
+variables = c("F", "CV.CPUE", "AgeDiversity", "Abundance", "AMO", 
               "SBT", "CVofSBT", "SST", "CVofSST")
-cl = c(7,2,3,4,5,6,5,6)
-sh = c(4,21,1,23,24,2,24,2)
+cl = c(1,7,2,3,4,5,6,5,6)
+sh = c(7,4,21,1,23,24,2,24,2)
 plot_mode = "box"
 
 # directory for saving S-map results
