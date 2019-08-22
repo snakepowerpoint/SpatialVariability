@@ -18,7 +18,7 @@ max(unlist(lapply(age.species, FUN=function(x){
     max(with(data, table(Year, Quarter)))
 }))) # 183
 
-# therefore, we drop out quarters which subareas are less than 10 (5% of maximum)
+# we drop out quarters which subareas are less than 10
 age.species <- lapply(age.species, FUN=function(x){
     data1 = droplevels(subset(data.frame(x), subset=Quarter%in%1))
     data3 = droplevels(subset(data.frame(x), subset=Quarter%in%3))
@@ -35,7 +35,7 @@ age.species <- lapply(age.species, FUN=function(x){
     result[with(result, order(Year, Quarter, Subarea)), ]
 })
 
-# restrict age data in 1991-2015
+# restrict age data within study period
 age.species = lapply(age.species, FUN=function(x){
     data = data.frame(x)
     subset(x, subset = Year%in%c(1991:2015))

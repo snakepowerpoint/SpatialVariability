@@ -1,8 +1,6 @@
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
-#load(file=paste0(wd, "data\\cpue.RData"))
-#load(file=paste0(wd, "data\\age.RData"))
-#load(file=paste0(wd, "data\\taylor.RData"))
 setwd(paste0(wd, "data\\"))
+
 
 
 ### CPUE data

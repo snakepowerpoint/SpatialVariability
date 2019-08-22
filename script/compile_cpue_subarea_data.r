@@ -42,7 +42,7 @@ max(unlist(lapply(cpue.species, FUN=function(x){
     max(with(data, table(Year, Quarter)))
 }))) # 183
 
-# therefore, we drop out quarters with less than 10 subareas (5% of maximum)
+# we drop out quarters with less than 10 subareas
 cpue.species <- lapply(cpue.species, FUN=function(x){
     data1 = droplevels(subset(data.frame(x), subset=Quarter%in%1))
     data3 = droplevels(subset(data.frame(x), subset=Quarter%in%3))
@@ -59,7 +59,7 @@ cpue.species <- lapply(cpue.species, FUN=function(x){
     result[with(result, order(Year, Quarter, Subarea)), ]
 })
 
-# restrict CPUE data on 9 standard species during 1991-2015
+# restrict CPUE data on 9 standard species within study period
 species = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus",
             "Merlangius merlangus", "Pleuronectes platessa", "Pollachius virens",
             "Scomber scombrus", "Sprattus sprattus", "Trisopterus esmarkii")
