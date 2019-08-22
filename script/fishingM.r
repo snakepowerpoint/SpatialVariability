@@ -30,6 +30,7 @@ fishingM = loadData("mackerel8120.xml", "Scomber scombrus")
 fishingM = loadData("sprat7181.xml", "Sprattus sprattus")
 fishingM = loadData("norwaypout7998.xml", "Trisopterus esmarkii")
 
+# select data within study period
 fishingM = subset(fishingM, subset = Year %in% c(1991:2015))
 write.csv(fishingM, file = "..\\..\\output\\fishingM.csv", row.names = FALSE)
 
