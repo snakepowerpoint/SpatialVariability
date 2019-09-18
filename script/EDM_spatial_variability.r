@@ -3,16 +3,19 @@ wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
 setwd(paste0(wd, "script"))
 source("EDM.r")
 
-# take first difference
+
+# detrend
+detrend_fun = detrend_sig
 EDM_list = lapply(EDM_list, FUN=function(item){
-    data = item$data
-    data_std = item$data_std
-    data_per_year = item$data_per_year
+    data_std = item$data_std[-c(1,2)]
+    data_per_year = item$data_per_year[-c(1)]
     
-    item$data = data.frame(cbind(data[-1, c(1,2)], take_first_diff(data[, -c(1,2)])))
-    item$data_std = data.frame(cbind(data_std[-1, c(1,2)], take_first_diff(data_std[, -c(1,2)])))
-    item$data_per_year = data.frame(cbind(data_per_year[-1, c(1)], 
-                                          take_first_diff(data_per_year[, -c(1)])))
+    # apply linear regression
+    data_std = apply(data_std, 2, FUN=detrend_fun)
+    data_per_year = apply(data_per_year, 2, FUN=detrend_fun)
+    
+    item$data_std = data.frame(cbind(item$data_std[c(1,2)], data_std))
+    item$data_per_year = data.frame(cbind(item$data_per_year[c(1)], data_per_year))
     
     return(item)
 })
@@ -33,10 +36,10 @@ EDM_lib_var = lapply(EDM_list, FUN = function(item){
 
 
 ### CCM analysis to determine causality
-# Age diversity ~ Spatial CV, Abundance, AMO, SBT/SST, CV of SBT/SST
+# Spatial CV ~ Age diversity, Abundance, AMO, SBT/SST, CV of SBT/SST
 lags = 8
 time_ccm = 100
-library_var = "AgeDiversity"
+library_var = "CV.CPUE"
 
 ########## Warning!
 # This step takes much time. 
@@ -98,6 +101,8 @@ EDM_lib_var = lapply(EDM_lib_var, function(item, min_count = time_ccm*0.95){
     
     # find the one having maximal rho
     ccm_sig_lag_count = split(ccm_sig_lag_count, f = ccm_sig_lag_count$target, drop = TRUE)
+    item$ccm_sig = do.call(rbind, ccm_sig_lag_count)
+    
     ccm_sig_lag_count = lapply(ccm_sig_lag_count, function(x) x[1,])
     ccm_sig_lag_count = do.call(rbind, ccm_sig_lag_count)
     item$ccm_most_significant = ccm_sig_lag_count[order(ccm_sig_lag_count$rho, decreasing = TRUE), ]
@@ -114,11 +119,13 @@ drop_temperature = function(item){
         data = item$ccm_most_significant
         row_to_drop = grep("SST", data$target)
         item$ccm_most_significant = data[-c(row_to_drop), ]
+        item$ccm_sig = item$ccm_sig[-c(grep("SST", item$ccm_sig$target)), ]
     }
     else {
         data = item$ccm_most_significant
         row_to_drop = grep("SBT", data$target)
         item$ccm_most_significant = data[-c(row_to_drop), ]
+        item$ccm_sig = item$ccm_sig[-c(grep("SBT", item$ccm_sig$target)), ]
     }
     return(item)
 }
@@ -148,12 +155,33 @@ EDM_lib_var = lapply(EDM_lib_var, feasibleCVEmbedding)
 lapply(EDM_lib_var, function(item){return(item$E_feasible)})  
 
 
+## save summaried ccm results
+ccm_data = data.frame(0)
+for (i in 1:length(EDM_lib_var)){
+    data = EDM_lib_var[[i]]$ccm_most_significant
+    if (nrow(data) > 0){
+        data$species = names(EDM_lib_var)[i]
+        ccm_data = merge(ccm_data, data, all=TRUE, sort=FALSE)
+    }
+}
+
+ccm_table = xtabs(rho ~ species + target, data=ccm_data, sparse=TRUE)
+ccm_table = as.data.frame.matrix(ccm_table)
+
+for (i in 1:length(EDM_lib_var)){
+    print(EDM_lib_var[[i]]$E$CV.CPUE$peaks)
+}
+
+write.csv(x=ccm_table, file=paste0(wd, "ccm.csv"))
+
+
 
 ### S-map
 # generate a data frame corresponding to lagged variables for S-map analysis 
+is_full = FALSE
 EDM_lib_var = lapply(EDM_lib_var, FUN=function(item, lib_var=library_var){
     data = item[[dataset]]
-    generateSmapData(item, data=data, lib_var=lib_var)
+    generateSmapData(item, data=data, lib_var=lib_var, is_full=is_full)
 })
 
 # perform S-map analysis
@@ -189,11 +217,11 @@ variables = c("F", "CV.CPUE", "AgeDiversity", "Abundance", "AMO",
               "SBT", "CVofSBT", "SST", "CVofSST")
 cl = c(1,7,2,3,4,5,6,5,6)
 sh = c(7,4,21,1,23,24,2,24,2)
-plot_mode = "box"
+plot_mode = "series"
 
 # directory for saving S-map results
-subpath = paste0("output\\smap\\", library_var, "\\")
-dir.create(file.path(wd, subpath), showWarnings = FALSE)
+save_dir = paste0(wd, "output\\smap\\", library_var, "\\")
+dir.create(save_dir, showWarnings = FALSE)
 
 setwd(paste0(wd, 'script'))
 source("utils/plot.r")
@@ -212,7 +240,6 @@ lapply(EDM_lib_var, function(item, colors=cl, shapes=sh, mode=plot_mode){
                                  colors=colors,
                                  shapes=shapes,
                                  mode=mode)
-        save_dir = paste0(wd, "output\\smap\\", library_var, "\\")
         save_path = paste0(save_dir, mode, "_", species, i)
         
         file_name_eps = paste0(save_path, ".eps")
@@ -227,7 +254,7 @@ if (plot_mode == "series"){
 } else if (plot_mode == "box"){
     smap_boxplot_legend(lib_var=library_var, colors=cl)
 }
-file_name_eps = paste0(wd, subpath, plot_mode, "_legend", ".eps")
+file_name_eps = paste0(save_dir, plot_mode, "_legend", ".eps")
 ggsave(filename = file_name_eps)
 
 
@@ -265,8 +292,8 @@ for (species in smap_results_list){
 }
 
 # re-arrange columns
-variables = c(variables, "theta", "rho", "pvalue")
-order.var = variables[sort(match(names(smap_results_df), variables))]
+smap_var = c(variables, "theta", "rho", "pvalue")
+order.var = smap_var[sort(match(names(smap_results_df), smap_var))]
 smap_results_df = smap_results_df[, order.var, drop = FALSE]
 smap_results_df = as.data.frame(apply(smap_results_df, 2, round, digits = 4))
 
@@ -298,47 +325,97 @@ write.csv(x=smap_results_df, file=filename)
 
 
 
-### robustness test on S-map
+### Robustness test on S-map
 setwd(paste0(wd, 'script'))
 source("robustness_test.r")
 
-robustness_list = lapply(EDM_lib_var, FUN=function(species, lib_var=library_var){
+# remove robustness test on sub-optimal E
+robustness_list = lapply(EDM_lib_var, 
+                         FUN=function(species, lib_var=library_var, use_all_data=is_full){
     # exclude colunm of "Year" and "Quarter"
     data = species[[dataset]]
     data = subset(data, select=names(data) %ni% c("Year", "Quarter"))
     
     if (nrow(species$E_feasible) > 0){
-        dim_lib_var = species$E_feasible$peaks[1]
         tar_vars = as.character(species$ccm_most_significant$target)
         tar_vars = as.character(tar_vars)
-        lags = species$ccm_most_significant$tar.lag
-        lags = abs(lags)
-        
+        if (use_all_data){
+            lags = rep(0, length(tar_vars))
+        } else {
+            lags = species$ccm_most_significant$tar.lag
+            lags = abs(lags)
+        }
         data = subset(data, select = c(lib_var, tar_vars))
         
-        robust(data, dim_lib_var=dim_lib_var, lags=lags)
-    }
-})
-
-robustness_list = lapply(robustness_list, FUN=function(data){
-    if (is.data.frame(data)){
-        order.var = variables[sort(match(names(data), variables))]
-        data = data[, order.var, drop = FALSE]
-        
-        return(round(data, digits = 4))
+        robust_output = data.frame(0)
+        for (emb_dim in species$E_feasible$peaks){
+            output = robust(data, dim_lib_var=emb_dim, lags=lags)
+            robust_output = merge(robust_output, output, all=TRUE)
+        }
+        return(robust_output)
+    } else {
+        return(NULL)
     }
     
-    else {return(NULL)}
 })
+
+# merge results of robustness test for all species
+robustness_table = data.frame(0)
+for (i in 1:length(robustness_list)){
+    data = robustness_list[[i]]
+    if (!is.null(data)){
+        data = round(data, digits=4)
+        data$species = names(robustness_list)[i]
+        robustness_table = merge(robustness_table, data, all=TRUE, sort=FALSE)
+    }
+}
+
+robust_var = c(variables, "theta", "rho", "pvalue", "species")
+order.var = robust_var[sort(match(names(robustness_table), robust_var))]
+robustness_table = robustness_table[, order.var, drop = FALSE]
 
 # directory for saving robustness test results
 subpath = paste0("output\\robustness_test\\", library_var, "\\")
 dir.create(file.path(wd, subpath), showWarnings = FALSE)
-for (idx in 1:length(robustness_list)){
-    filename = paste0(wd, subpath, names(robustness_list)[idx], ".csv")
-    write.csv(x=robustness_list[[idx]], file=filename, row.names = FALSE)
-}
+filename = paste0(wd, subpath, "all_species.csv")
+write.csv(x=robustness_table, file=filename, row.names = FALSE)
 
+
+
+### Robustness test on different lags
+robust_lag_list = lapply(EDM_lib_var, FUN=function(species){
+    if (nrow(species$E_feasible) > 0){
+        raw_data = species[[dataset]]
+        embed_dim = species$E_feasible$peaks[1]
+        lib_var = library_var
+        ccm_most_sig = species$ccm_most_significant
+        ccm_sig = species$ccm_sig
+        
+        print(species$species)
+        return(smap_each_lag(raw_data=raw_data, 
+                             embed_dim=embed_dim, 
+                             lib_var=lib_var, 
+                             ccm_most_sig=ccm_most_sig, 
+                             ccm_sig=ccm_sig))
+    } else {
+        return(NULL)
+    }
+})
+
+robust_lag_list = lapply(robust_lag_list, FUN=function(species){
+    robust_var = c("lag", "lag_var", variables, "theta", "rho", "pvalue")
+    order.var = robust_var[sort(match(names(species), robust_var))]
+    sorted_table = species[, order.var, drop = FALSE]
+    
+    return(sorted_table)
+})
+
+(test = robust_lag_list$`Gadus morhua`)
+(test = robust_lag_list$`Melanogrammus aeglefinus`)
+(test = robust_lag_list$`Merlangius merlangus`)
+(test = robust_lag_list$`Merlangius merlangus`)
+
+(test = robust_lag_list$`Trisopterus esmarkii`)
 
 
 

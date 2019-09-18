@@ -72,4 +72,47 @@ robust = function(data, dim_lib_var, lags){
 }
 
 
+## robustness test on each lag
+smap_each_lag = function(raw_data, embed_dim, lib_var, ccm_most_sig, ccm_sig){
+    num_sample = dim(raw_data)[1]
+    num_variable = embed_dim
+    ccm_result = ccm_most_sig[1:(num_variable-1), ]
+    
+    smap_data = data.frame(matrix(0, nrow = num_sample, ncol = 0))
+    smap_data[, lib_var] = raw_data[lib_var]
+    
+    output = data.frame(0)
+    for (i_var in 1:(num_variable-1)){
+        select_var = as.character(ccm_result$target[i_var])
+        ccm_select_var = subset(ccm_sig, subset=ccm_sig$target==select_var)
+        ccm_temp = ccm_result[-i_var, ]
+        
+        num_remain_var = dim(ccm_temp)[1]
+        if (num_remain_var > 0){
+            for (j_var in 1:num_remain_var){
+                vars = as.character(ccm_temp$target[j_var])
+                lags = abs(ccm_temp$tar.lag[j_var])
+                smap_data[, vars] = c(rep(NA,lags), raw_data[, vars][1:(num_sample-lags)])
+            }
+        }
+        
+        num_lag = dim(ccm_select_var)[1]
+        for (j_var in 1:num_lag){
+            lags = abs(ccm_select_var$tar.lag[j_var])
+            smap_data[, select_var] = c(rep(NA,lags), raw_data[, select_var][1:(num_sample-lags)])
+            
+            smap_result_list = performSmap(smap_data)
+            
+            coeff = smap_result_list$coefficients
+            smap_mean = data.frame(lag=lags,
+                                   lag_var=select_var,
+                                   data.frame(as.list(colMeans(coeff, na.rm=TRUE))), 
+                                   rho=smap_result_list$rho,
+                                   pvalue=smap_result_list$pvalue,
+                                   theta=smap_result_list$theta)
+            output = merge(output, smap_mean, all=TRUE, sort=FALSE)
+        }
+    }
+    return(output)
+}
 
