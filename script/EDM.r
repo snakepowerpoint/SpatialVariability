@@ -20,7 +20,7 @@ for (i in 1:length(species)){
 }
 names(EDM_list) = species
 
-# standarization
+# standarization (data)
 EDM_list = lapply(EDM_list, FUN = function(item){
     item$data_std = cbind(item$data[, c(1,2)], scale(item$data[, -c(1,2)]))
     
@@ -46,12 +46,6 @@ fishingM = read.csv("fishingM.csv", header=TRUE)
 fishingM_wo_species = subset(fishingM, select=-c(Species))
 fishingM_wo_species = split(fishingM_wo_species, f=fishingM$Species)
 
-# standardization
-fishingM_wo_species = lapply(fishingM_wo_species, FUN=function(item){
-    item$F = as.vector(scale(item$F))
-    return(item)
-})
-
 
 ## convert quarterly data to yearly data to meet with fishing mortality data
 # a function to compute mean value for each year
@@ -63,8 +57,8 @@ compute_mean_per_year = function(data){
 
 # apply above function to each item (species) in list
 EDM_list = lapply(EDM_list, FUN=function(item){
-    data_std = item$data_std
-    data_per_year = compute_mean_per_year(data_std)
+    data = item$data
+    data_per_year = compute_mean_per_year(data)
     item$data_per_year = data_per_year
     return(item)
 })
@@ -75,7 +69,37 @@ for (i in 1:length(EDM_list)){
     EDM_list[[i]]$data_per_year = result
 }
 
+# standarization (data_per_year)
+EDM_list = lapply(EDM_list, FUN = function(item){
+    item$data_per_year = cbind(item$data_per_year[c(1)], 
+                               scale(item$data_per_year[, -c(1)]))
+    return(item)
+})
+
 rm(result)
+rm(fishingM)
+rm(fishingM_wo_species)
+
+
+## detrend 
+# first difference (need to be modified to input series)
+take_first_diff = function(data){
+    return(data.frame(apply(data, 2, diff)))
+}
+
+# lienar regression to remove significant trend
+detrend_sig = function(series){
+    data = data.frame(x=1:length(series), y=series)
+    fit = lm(y~x, data=data)
+    fit_summary = summary(fit)
+    p_value = fit_summary$coefficient[, 4]['x']
+    
+    if (p_value < 0.05){
+        return(as.numeric(series - fit$fitted.values))
+    } else {
+        return(series)
+    }
+}
 
 
 
@@ -86,14 +110,20 @@ detectPeak = function(data){
     n = length(data)
     peaks = c()
     rho = c()
-    for (idx in 2:(n-1)){
+    for (idx in 2:(n-1)){ # from E=2
         if ((data[idx-1] < data[idx]) & (data[idx+1] < data[idx])){
             peaks = c(peaks, idx)
             rho = c(rho, data[idx])}
     }
     output = data.frame(peaks, rho)
     
-    return(output[order(output$rho, decreasing = TRUE), ])
+    if (nrow(output) < 1){
+        rho = max(data[-1]) # ignore E=1
+        peaks = which(data == rho)
+        return(data.frame(peaks, rho))
+    } else {
+        return(output[order(output$rho, decreasing = TRUE), ])
+    }
 }
 
 # a function using simplex projection to determine embedding dimension for each variable
@@ -166,7 +196,7 @@ determineCausality = function(data, dim.list, species, lags = 8, num_samples = 1
 
 ### S-map
 ## generate a data frame corresponding to lagged variables for S-map analysis 
-generateSmapData = function(item, data, lib_var){
+generateSmapData = function(item, data, lib_var, is_full=FALSE){
     num_Smap_model = length(item$E_feasible$peaks)
     if (num_Smap_model < 1){
         item$Smap1 = NA
@@ -186,9 +216,14 @@ generateSmapData = function(item, data, lib_var){
         item[[name_Smap_model[i]]]$data[, lib_var] = data[lib_var]
         
         for (idx_var in 1:(num_variable[i]-1)){
-            lags = abs(ccm_result$tar.lag[idx_var])
-            vars = as.character(ccm_result$target[idx_var])
-            item[[name_Smap_model[i]]]$data[, vars] = c(rep(NA,lags), data[, vars][1:(num_sample-lags)])
+            if (is_full){
+                vars = as.character(ccm_result$target[idx_var])
+                item[[name_Smap_model[i]]]$data[, vars] = data[, vars]
+            } else {
+                lags = abs(ccm_result$tar.lag[idx_var])
+                vars = as.character(ccm_result$target[idx_var])
+                item[[name_Smap_model[i]]]$data[, vars] = c(rep(NA,lags), data[, vars][1:(num_sample-lags)])
+            }
         }
     }
     
@@ -229,7 +264,7 @@ performSmap = function(data_for_smap){
     coeff = data.frame(block_lnlp_output$smap_coefficients[[1]])  # s-map coefficient
     colnames(coeff) = c(colnames(data), "Constant")
     
-    rho = round(block_lnlp_output$rho, 2)
+    rho = block_lnlp_output$rho
     
     # test on the significance of rho
     n_pred = block_lnlp_output$num_pred
