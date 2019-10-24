@@ -1,18 +1,5 @@
-lags = lapply(test1, function(x){
-    data = x$ccm_most_significant
-    data$species = x$species
-    rownames(data) = NULL
-    
-    return(data)
-})
-
-lags = do.call(rbind, lags)
-rownames(lags) = NULL  #remove rownames
-lags = lags[, c("species", "target", "tar.lag", "count", "rho")]  #sort
-lags
-
-#write.csv(lags, file = paste0(wd, "output\\ccm\\", "causalVarLag_BT.csv"), row.names = FALSE)
-lags = read.csv(file = paste0(wd, "output\\ccm\\", "causalVarLag_BTandSST1.csv"), header = TRUE)
+wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
+lags = read.csv(file = paste0(wd, "output\\ccm\\", "causalVarLag.csv"), header = TRUE)
 
 K = c(NA, 0.23, 0.19, 0.32, 0.11, 0.07, NA, NA, 0.52)
 A50 = c(3, 3.8, 2.5, 1.5, 2.5, 4.6, 1.5, 1.5, 2.3)
@@ -64,6 +51,7 @@ scatterplot = function(x, y, xlab, ylab, main, quadratic = FALSE){
 ## A50
 data = lags
 with(data, scatterplot(A50, abs(tar.lag)/2, "A50", "Lag", "All causal variables"))
+with(data, scatterplot(A50, abs(tar.lag)/2, "A50", "Lag", "All causal variables", "TRUE"))
 
 #biological
 data = subset(lags, subset = lags$target %in% c("AgeDiversity", "Abundance"))
@@ -136,21 +124,16 @@ data = subset(lags, subset = lags$target %in% c("CVofSBT", "CVofSST"))
 with(data, scatterplot(K, abs(tar.lag)/2, "K", "Lag", "CV of Temperature", quadratic = TRUE))
 
 #mean each species
-john = with(lags, aggregate(tar.lag, by = list(species = species, K = K), FUN = mean))
-plot(abs(x)/2 ~ K, data = john, pch = 19)
-fit = lm(abs(x)/2 ~ K + I(K^2), data = john)
+data = with(lags, aggregate(tar.lag, by = list(species = species, K = K), FUN = mean))
+plot(abs(x)/2 ~ K, data = data, pch = 19)
+fit = lm(abs(x)/2 ~ K + I(K^2), data = data)
 summary(fit)
 
-with(john, scatterplot(K, abs(x)/2, "K", "Lag", "Mean of all variables", quadratic = TRUE))
+with(data, scatterplot(K, abs(x)/2, "K", "Lag", "Mean of all variables", quadratic = TRUE))
 
 
 
-
-
-
-
-
-#####
+##### linear regression
 #biological
 plot(abs(tar.lag)/2 ~ K, data = subset(lags, subset = lags$target %in% c("AgeDiversity", "Abundance")))
 fit = lm(abs(tar.lag)/2 ~ K, data = subset(lags, subset = lags$target %in% c("AgeDiversity", "Abundance")))
@@ -177,9 +160,9 @@ fit = lm(abs(tar.lag)/2 ~ K, data = subset(lags, subset = lags$target %in% c("SB
 summary(fit)
 
 #mean each species
-john = with(lags, aggregate(tar.lag, by = list(species = species, K = K), FUN = mean))
-plot(abs(x)/2 ~ K, data = john)
-fit = lm(abs(x)/2 ~ K, data = john)
+data = with(lags, aggregate(tar.lag, by = list(species = species, K = K), FUN = mean))
+plot(abs(x)/2 ~ K, data = data)
+fit = lm(abs(x)/2 ~ K, data = data)
 summary(fit)
 
 
@@ -214,7 +197,26 @@ fit = lm(abs(tar.lag)/2 ~ K, data = subset(lags, subset = lags$target %in% c("SB
 summary(fit)
 
 #mean each species
-john = with(lags, aggregate(tar.lag, by = list(species = species, K = K), FUN = mean))
-plot(abs(x)/2 ~ K, data = john)
-fit = lm(abs(x)/2 ~ K, data = john)
+data = with(lags, aggregate(tar.lag, by = list(species = species, K = K), FUN = mean))
+plot(abs(x)/2 ~ K, data = data)
+fit = lm(abs(x)/2 ~ K, data = data)
 summary(fit)
+
+
+
+##### Appendix
+lags = lapply(EDM_lib_var, function(x){
+    data = x$ccm_most_significant
+    data$species = x$species
+    rownames(data) = NULL
+    
+    return(data)
+})
+
+lags = do.call(rbind, lags)
+rownames(lags) = NULL  #remove rownames
+lags = lags[, c("species", "target", "tar.lag", "count", "rho")]  #sort
+lags
+
+write.csv(lags, file = paste0(wd, "output\\ccm\\", "causalVarLag.csv"), row.names = FALSE)
+

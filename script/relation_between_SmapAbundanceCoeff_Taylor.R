@@ -3,7 +3,10 @@ setwd(paste0(wd, "output\\smap"))
 
 data = read.csv("Smap_abundance_coefficients_vs_b.csv", header = TRUE)
 data = na.omit(data)
-data = subset(data, subset = data$S.map.rho > 0.05)
+data$pvalue =  sub(pattern = "<", replacement = "", x = data$pvalue)
+data$pvalue = as.numeric(data$pvalue)
+
+data = subset(data, subset = data$pvalue < 0.1)
 
 par(pty='s')
 plot(abundance_coeff ~ b, data = data, pch = 19, 
