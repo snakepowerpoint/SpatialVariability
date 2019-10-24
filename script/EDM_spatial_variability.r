@@ -169,7 +169,7 @@ ccm_table = xtabs(rho ~ species + target, data=ccm_data, sparse=TRUE)
 ccm_table = as.data.frame.matrix(ccm_table)
 
 for (i in 1:length(EDM_lib_var)){
-    print(EDM_lib_var[[i]]$E$CV.CPUE$peaks)
+    print(EDM_lib_var[[i]]$E[[library_var]]$peaks)
 }
 
 write.csv(x=ccm_table, file=paste0(wd, "ccm.csv"))
@@ -217,7 +217,7 @@ variables = c("F", "CV.CPUE", "AgeDiversity", "Abundance", "AMO",
               "SBT", "CVofSBT", "SST", "CVofSST")
 cl = c(1,7,2,3,4,5,6,5,6)
 sh = c(7,4,21,1,23,24,2,24,2)
-plot_mode = "series"
+plot_mode = "series"  # 'series' or 'box'
 
 # directory for saving S-map results
 save_dir = paste0(wd, "output\\smap\\", library_var, "\\")
@@ -410,12 +410,14 @@ robust_lag_list = lapply(robust_lag_list, FUN=function(species){
     return(sorted_table)
 })
 
-(test = robust_lag_list$`Gadus morhua`)
-(test = robust_lag_list$`Melanogrammus aeglefinus`)
-(test = robust_lag_list$`Merlangius merlangus`)
-(test = robust_lag_list$`Merlangius merlangus`)
-
-(test = robust_lag_list$`Trisopterus esmarkii`)
+# directory for saving robustness test results
+subpath = paste0("output\\robustness_test\\", library_var, "_sig_detrend_each_lag\\")
+dir.create(file.path(wd, subpath), showWarnings = FALSE)
+for (i in 1:length(robust_lag_list)){
+    species = names(robust_lag_list)[i]
+    filename = paste0(wd, subpath, species, ".csv")
+    write.csv(x=robust_lag_list[[i]], file=filename, row.names=FALSE)
+}
 
 
 
