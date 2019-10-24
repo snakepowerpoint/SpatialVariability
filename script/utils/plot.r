@@ -79,7 +79,7 @@ plotSmapCoeff = function(
     data_of_coeff = smap_result_list$coefficients
     data_of_coeff = data_of_coeff[target_vars] 
     
-    rho = smap_result_list$rho
+    rho = round(smap_result_list$rho, 2)
     
     # sort data according to customized order of variables
     order_var = variables[sort(match(names(data_of_coeff), variables))]
@@ -120,13 +120,13 @@ smap_timeseries_plot = function(data, lib_var, cl, sh, species, rho){
     
     smaptime = 
         ggplot(data=data, aes(x=date, y=value, shape=variable, color=variable, fill=variable)) + 
-        geom_point(size=3) +
+        geom_point(size=4) +
         geom_line(size=1) +
         geom_hline(yintercept=0, linetype='dashed') +
         theme_bw() + 
-        theme(plot.title = element_text(hjust = 0.5, size = 18),
-              axis.title = element_text(size = 18, face = "bold"),
-              axis.text = element_text(size = 18, colour = "black"),
+        theme(plot.title = element_text(hjust = 0.5, size = 28),
+              axis.title = element_text(size = 24, face = "bold"),
+              axis.text = element_text(size = 20, colour = "black"),
               panel.border = element_rect(size = 1.1),
               panel.grid.major = element_blank(), 
               panel.grid.minor = element_blank(),
@@ -172,7 +172,7 @@ smap_boxplot = function(data, lib_var, cl, sh, n_var, species, rho){
     
     smapbox = 
         ggplot(data=data, aes(x=variable, y=value, color=variable)) + 
-        geom_boxplot(na.rm=T, lwd=1, width=0.4*n/n_var) + 
+        geom_boxplot(na.rm=T, lwd=1, width=0.7*n/n_var) + 
         geom_hline(yintercept=0, linetype='dashed') +
         theme_bw() + 
         theme(plot.title = element_text(hjust = 0.5, size = 18),
