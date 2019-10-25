@@ -1,5 +1,5 @@
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
-setwd(paste0(wd, "data\\raw"))
+setwd(paste0(wd, "data\\raw\\cpue_per_length_per_subarea"))
 
 df = read.csv("CPUE_per_length_per_subarea_AtoD.csv", header=T) # A-D
 lgth = df

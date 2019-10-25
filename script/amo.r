@@ -1,5 +1,5 @@
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
-setwd(paste0(wd, "data\\raw\\AMO"))
+setwd(paste0(wd, "data\\raw\\amo"))
 
 amo = read.csv("amon.csv", header=F, sep="")
 colnames(amo) = c("Year", paste0("M", 1:12))

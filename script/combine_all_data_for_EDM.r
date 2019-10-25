@@ -114,7 +114,7 @@ result.te = merge(result.te, bottomT, by=c("Year", "Quarter"))
 ### Sea surface temperature
 setwd(paste0(wd, "output\\"))
 
-sst = read.csv("SST.csv", header = TRUE)
+sst = read.csv("sst.csv", header = TRUE)
 
 # merge
 result.ch = merge(result.ch, sst, by=c("Year", "Quarter"))

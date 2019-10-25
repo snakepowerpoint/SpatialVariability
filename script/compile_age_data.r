@@ -1,5 +1,5 @@
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
-setwd(paste0(wd, "data\\raw"))
+setwd(paste0(wd, "data\\raw\\cpue_per_age_per_subarea"))
 
 age = read.csv("CPUE_per_age_per_subarea.csv", header=T)
 # keep variables we want

@@ -1,7 +1,7 @@
 library(ncdf4)
 
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
-sst_location = "data\\raw\\SST"
+sst_location = "data\\raw\\sst"
 setwd(paste0(wd, sst_location))
 
 ### COBE-SST2
@@ -57,5 +57,5 @@ sst.stat.q = sst.stat.q[with(sst.stat.q, order(Year, Quarter)), ]
 sst.stat.q = subset(sst.stat.q, subset = Year%in%c(1991:2015)) # restrict data between 1991 and 2015
 sst.stat.q = sst.stat.q[, c("Year", "Quarter", "MeanSST", "CVofSST")]
 
-write.csv(sst.stat.q, file=paste0(wd, "output\\SST.csv"), row.names=FALSE)
+write.csv(sst.stat.q, file=paste0(wd, "output\\sst.csv"), row.names=FALSE)
 
