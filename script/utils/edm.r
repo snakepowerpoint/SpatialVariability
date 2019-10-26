@@ -82,11 +82,6 @@ rm(fishingM_wo_species)
 
 
 ## detrend 
-# first difference (need to be modified to input series)
-take_first_diff = function(data){
-    return(data.frame(apply(data, 2, diff)))
-}
-
 # lienar regression to remove significant trend
 detrend_sig = function(series){
     data = data.frame(x=1:length(series), y=series)
