@@ -23,17 +23,6 @@ age$lat = coordinate$Lat[pos]
 library(ggplot2)
 library(maps)
 
-scale_x_longitude <- function(xmin=-180, xmax=180, step=1, ...) {
-    xbreaks <- seq(xmin, xmax, step)
-    xlabels <- unlist(lapply(xbreaks, function(x) ifelse(x < 0, parse(text=paste0(x,"^o", "*W")), ifelse(x > 0, parse(text=paste0(x,"^o", "*E")),x))))
-    return(scale_x_continuous("Longitude", breaks = xbreaks, labels = xlabels, expand = c(0, 0), ...))
-}
-scale_y_latitude <- function(ymin=-90, ymax=90, step=0.5, ...) {
-    ybreaks <- seq(ymin, ymax, step)
-    ylabels <- unlist(lapply(ybreaks, function(x) ifelse(x < 0, parse(text=paste0(x,"^o", "*S")), ifelse(x > 0, parse(text=paste0(x,"^o", "*N")),x))))
-    return(scale_y_continuous("Latitude", breaks = ybreaks, labels = ylabels, expand = c(0, 0), ...))
-}  
-
 # map
 mp = fortify(map(fill = TRUE, plot = FALSE))
 
@@ -49,6 +38,18 @@ Amap <- ggplot() +
     theme(panel.grid = element_blank(),
           panel.background = element_blank())
 #print(Amap)
+
+# breaks on x and y axis
+scale_x_longitude <- function(xmin=-180, xmax=180, step=1, ...) {
+    xbreaks <- seq(xmin, xmax, step)
+    xlabels <- unlist(lapply(xbreaks, function(x) ifelse(x < 0, parse(text=paste0(x,"^o", "*W")), ifelse(x > 0, parse(text=paste0(x,"^o", "*E")),x))))
+    return(scale_x_continuous("Longitude", breaks = xbreaks, labels = xlabels, expand = c(0, 0), ...))
+}
+scale_y_latitude <- function(ymin=-90, ymax=90, step=0.5, ...) {
+    ybreaks <- seq(ymin, ymax, step)
+    ylabels <- unlist(lapply(ybreaks, function(x) ifelse(x < 0, parse(text=paste0(x,"^o", "*S")), ifelse(x > 0, parse(text=paste0(x,"^o", "*N")),x))))
+    return(scale_y_continuous("Latitude", breaks = ybreaks, labels = ylabels, expand = c(0, 0), ...))
+}  
 
 
 
@@ -181,6 +182,8 @@ ggsave(filename=paste0('Pleuronectes platessa', ".png"),
        path=paste0(wd, "output\\figures\\suppl"),
        scale=1.5)
 
+# plot age-specific spatial distribution for each species
+# save as .eps
 for (species in names(age_species)){
     data = age_species[[species]]
     data[is.na(data)] = 0
@@ -192,7 +195,7 @@ for (species in names(age_species)){
            scale=1)
 }
 
-# alternative method to plot
+# save as .png
 for (species in names(age_species)){
     data = age_species[[species]]
     data[is.na(data)] = 0
@@ -203,59 +206,4 @@ for (species in names(age_species)){
 }
 
 
-
-### Alternatives
-# pie plot on map
-library(ggplot2)
-library(sf)
-library(rgeos)
-
-library(maps)
-library(mapplots)
-
-##
-image(x = xmin:xmax, y = ymin:ymax, z = outer(1:15, 1:15, "+"), 
-      xlab = "lon", ylab = "lat")
-map(database = "world", xlim = c(xmin, xmax), ylim = c(ymin, ymax), 
-    add = TRUE, bg = 'lightblue')
-add.pie(z = age[1, 5:9], x = age$lon[1], y = age$lat[1])
-
-
-
-
-### legacy
-# demo code
-test = subset(age, subset = age$Species == "Clupea harengus")
-mp1 <- fortify(map(fill = TRUE, plot = FALSE))
-mp2 <- map_data('world2')
-mp3 <- map_data('world')
-
-xmin <- min(test$lon) - 2
-xmax <- max(test$lon) + 2
-ymin <- min(test$lat) - 2
-ymax <- max(test$lat) + 2
-zmin <- min(test[, grep("Age", names(test))])
-zmax <- max(test[, grep("Age", names(test))])
-
-#plot map
-Amap <- ggplot() + 
-    geom_polygon(aes(x = long, y = lat, group = group), data = mp1, fill = "grey", colour = "grey") + 
-    coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax)) + 
-    theme_bw()
-
-#ratio = 0.8
-Amap <- ggplot() + 
-    geom_polygon(aes(x = long, y = lat, group = group), data = mp1, fill = "grey", colour = "grey") + 
-    coord_fixed(xlim = c(xmin, xmax), ylim = c(ymin, ymax), ratio = 0.8) + 
-    theme_bw()
-
-#add point
-tit <- bquote(italic(.(paste0(unique(test$Species), ','))) ~ 'age 0')
-Amap + geom_point(data = test, aes(x = lon, y = lat, size = Age_0)) + 
-    scale_size(range = c(0,6)) + 
-    labs(size = 'Total CPUE') + ggtitle(tit) + 
-    theme(plot.title = element_text(hjust = 0.5),
-          axis.text = element_text(size = 12),
-          axis.title.x = element_text(size = 12),
-          axis.title.y = element_text(size = 12))
 

@@ -3,7 +3,8 @@ library(plyr)
 library(dplyr)
 library(reshape2)
 
-setwd("C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\stock_assessment")
+wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
+setwd(paste0(wd, "data\\stock_assessment"))
 
 fishingM = data.frame(matrix(0, nrow=0, ncol=3))
 colnames(fishingM) = c("Year", "F", "Species")
@@ -32,7 +33,7 @@ fishingM = loadData("norwaypout7998.xml", "Trisopterus esmarkii")
 
 # select data within study period
 fishingM = subset(fishingM, subset = Year %in% c(1991:2015))
-write.csv(fishingM, file = "..\\..\\output\\fishingM.csv", row.names = FALSE)
+write.csv(fishingM, file = paste0(wd, "output\\fishingM.csv"), row.names = FALSE)
 
 
 

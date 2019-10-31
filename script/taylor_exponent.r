@@ -1,5 +1,4 @@
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
-#load(file=paste0(wd, "data\\cpue.RData")
 setwd(paste0(wd, "data\\"))
 
 cpue = read.csv("compiled_cpue_data.csv", header = TRUE)
@@ -55,5 +54,3 @@ taylor.dataframe = cbind(Species = taylor.dataframe$Species,
 
 write.csv(taylor.dataframe, file=paste0(wd, "output\\taylor.csv"), row.names=FALSE)
 
-
-#save.image(file="C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\data\\taylor.RData")
