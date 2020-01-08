@@ -17,7 +17,8 @@ EDM_lib_var = lapply(EDM_lib_var, function(item, lib_var=library_var, lag=lags, 
         ccm_result = determineCausality(data = data, 
                                         dim.list = item$E, 
                                         species = item$species,
-                                        lags = lag)
+                                        lags = lag,
+                                        seed = 1234)
         item$ccm = rbind(item$ccm, ccm_result)
     }
     

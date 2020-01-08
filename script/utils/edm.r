@@ -146,7 +146,7 @@ computeEmbedding = function(data, show_result=TRUE){
 library(data.table)
 
 # a function using CCM to determine causal variables (including lagged terms) of spatial CV
-determineCausality = function(data, dim.list, species, lags = 8, num_samples = 100){
+determineCausality = function(data, dim.list, species, lags=8, num_samples=100, seed=1234){
     cols = c('length', 'lib.size', 'E', 'library', 'target', 'tar.lag', 
              'rho', 'sd.rho', 'kendall.tau', 'significance')
     ccm_var = data.frame(matrix(0, length(lags:0), length(cols)))  # ccm results
@@ -163,7 +163,7 @@ determineCausality = function(data, dim.list, species, lags = 8, num_samples = 1
         
         for (lag in -lags:0){
             cv_x <- ccm(data, E = E, tp = lag, lib_sizes = c(seq(E, max_time, 3), max_time),
-                        lib_column = 1, target_column = idx, num_samples = num_samples)
+                        lib_column = 1, target_column = idx, num_samples = num_samples, RNGseed=seed)
             cv_x_m <- data.frame(ccm_means(cv_x), sd.rho = with(cv_x, tapply(rho, lib_size, sd)))
             
             n = dim(cv_x_m)[1]  # last row: ccm results with maximal library size
