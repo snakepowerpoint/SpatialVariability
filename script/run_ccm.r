@@ -6,7 +6,7 @@
 # One can skip this step if the pre-run CCM results are provided.
 # Please see the loading code below.
 ########## Warning!
-# run CCM 100 times to find the best lag for each variable
+# run CCM several times to find the best lag for each variable
 EDM_lib_var = lapply(EDM_lib_var, function(item, lib_var=library_var, lag=lags, t_ccm=time_ccm){
     data = item[[dataset]]
     data = subset(data, select=names(data) %ni% c("Year", "Quarter"))
@@ -14,11 +14,12 @@ EDM_lib_var = lapply(EDM_lib_var, function(item, lib_var=library_var, lag=lags, 
     
     item$ccm = data.frame(matrix(0, nrow = 0, ncol = 10))
     for (i in 1:t_ccm){
+        seed = 1234 + i * 10
         ccm_result = determineCausality(data = data, 
                                         dim.list = item$E, 
                                         species = item$species,
                                         lags = lag,
-                                        seed = 1234)
+                                        seed = seed)
         item$ccm = rbind(item$ccm, ccm_result)
     }
     
