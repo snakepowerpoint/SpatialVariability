@@ -1,7 +1,7 @@
 ## config 
 dataset = "data_std"  # change to "data_per_year" if fishing mortality is included
 detrend_fun = detrend_sig
-lags = 8  # change to "4" if fishing mortality is included
+lags = 4  # change to "4" if fishing mortality is included
 time_ccm = 200
 is_full = FALSE  # change to "TRUE" if a full time series is used in S-map analysis
 
