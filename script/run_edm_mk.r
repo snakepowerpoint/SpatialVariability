@@ -26,7 +26,7 @@ EDM_list = lapply(EDM_list, FUN=function(item){
 EDM_lib_var = lapply(EDM_list, FUN = function(item){
     data = item[[dataset]]
     data = subset(data, select=names(data) %ni% c("Year", "Quarter"))
-    item$E = computeEmbedding(data, show_result = TRUE)
+    item$E = computeEmbedding(data, show_result = FALSE)
     
     return(item)
 })

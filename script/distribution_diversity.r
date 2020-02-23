@@ -4,35 +4,22 @@ library(ggmap)
 library(maps)
 
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
-setwd(paste0(wd, "data"))
 
 
-### Age data
-age = read.csv("compiled_age_data.csv", header = TRUE)
-age = split(age, f = age$Species)
+### load compiled data
+setwd(paste0(wd, "output"))
+species_list = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus",
+                 "Merlangius merlangus", "Pleuronectes platessa", "Pollachius virens",
+                 "Scomber scombrus", "Sprattus sprattus", "Trisopterus esmarkii")
 
-# sum up CPUE of each age class according to year and quarter
-age = lapply(age, FUN=function(x){
-    data = data.frame(x)
-    output = with(data, aggregate(cbind(Age_0, Age_1, Age_2, Age_3, Age_4, Age_5, Age_6, Age_7, Age_8, Age_9, Age_10),
-                                  by=list(Year=Year, Quarter=Quarter), FUN=sum))
-    output = with(output, output[order(Year, Quarter), ])
-    
-    return(output)
-})
-
-# age diversity
-age = lapply(age, FUN=function(x){
-    data = data.frame(x)
-    Shannon.age = apply(data[, 3:13], 1, FUN=function(x){
-        p = x/sum(x, na.rm=T)
-        sum(-p*log(p), na.rm=T)
-    })
-    cbind(data, Shannon.age)
-})
+compiled_data = list()
+for (i in 1:length(species_list)){
+    compiled_data[[species_list[i]]] = read.csv(paste0(species_list[i], ".csv"))
+}
 
 
 ### CPUE data
+setwd(paste0(wd, "data"))
 cpue = read.csv("compiled_cpue_data.csv", header = TRUE)
 
 # align latitude and longitude to each subarea
@@ -56,21 +43,20 @@ cpue = split(cpue, f = cpue$Species)
 
 
 ### Select year & quarter that have the highest and lowest age diversity
-species_list = c("Clupea harengus", "Gadus morhua", "Melanogrammus aeglefinus",
-                 "Merlangius merlangus", "Pleuronectes platessa", "Pollachius virens",
-                 "Scomber scombrus", "Sprattus sprattus", "Trisopterus esmarkii")
-
-sp = species_list[1]
-age_sp = age[[sp]]
+sp = species_list[7]
+data_sp = compiled_data[[sp]]
 cpue_sp = cpue[[sp]]
 
-time_max_diversity = age_sp[which.max(age_sp$Shannon.age), c("Year", "Quarter")]
-time_min_diversity = age_sp[which.min(age_sp$Shannon.age), c("Year", "Quarter")]
+names(data_sp)
+variable = "CVofSST"
 
-cpue_sp_max = subset(cpue_sp, subset=cpue_sp$Year == time_max_diversity$Year & 
-                         cpue_sp$Quarter == time_max_diversity$Quarter)
-cpue_sp_min = subset(cpue_sp, subset=cpue_sp$Year == time_min_diversity$Year & 
-                         cpue_sp$Quarter == time_min_diversity$Quarter)
+time_max = data_sp[which.max(data_sp[[variable]]), c("Year", "Quarter")]
+time_min = data_sp[which.min(data_sp[[variable]]), c("Year", "Quarter")]
+
+cpue_sp_max = subset(cpue_sp, subset=cpue_sp$Year == time_max$Year & 
+                         cpue_sp$Quarter == time_max$Quarter)
+cpue_sp_min = subset(cpue_sp, subset=cpue_sp$Year == time_min$Year & 
+                         cpue_sp$Quarter == time_min$Quarter)
 
 # normalize to [0, 1]
 cpue_sp_max$CPUE = cpue_sp_max$CPUE / max(cpue_sp_max$CPUE)
@@ -86,15 +72,30 @@ inter_min = interp2xyz(interp(cpue_sp_min$lon, cpue_sp_min$lat, cpue_sp_min$CPUE
 mp = fortify(map(fill = TRUE, plot = FALSE))
 
 # figure parameters
-max_diver = round(max(age_sp$Shannon.age), 4)
-min_diver = round(min(age_sp$Shannon.age), 4)
-tit_max = bquote(italic(.(paste0(sp, ','))) ~ "age diversity =" ~ .(max_diver))
-tit_min = bquote(italic(.(paste0(sp, ','))) ~ "age diversity =" ~ .(min_diver))
+max_val = round(max(data_sp[[variable]]), 4)
+min_val = round(min(data_sp[[variable]]), 4)
+tit_max = bquote(italic(.(paste0(sp, ','))) ~ .(variable) ~ "=" ~ .(max_val))
+tit_min = bquote(italic(.(paste0(sp, ','))) ~ .(variable) ~ "=" ~ .(min_val))
 
+# breaks on x and y axis
+scale_x_longitude <- function(xmin=-180, xmax=180, step=1, ...) {
+    xbreaks <- seq(xmin, xmax, step)
+    xlabels <- unlist(lapply(xbreaks, function(x) ifelse(x < 0, parse(text=paste0(x,"^o", "*W")), ifelse(x > 0, parse(text=paste0(x,"^o", "*E")),x))))
+    return(scale_x_continuous("Longitude", breaks = xbreaks, labels = xlabels, expand = c(0, 0), ...))
+}
+scale_y_latitude <- function(ymin=-90, ymax=90, step=0.5, ...) {
+    ybreaks <- seq(ymin, ymax, step)
+    ylabels <- unlist(lapply(ybreaks, function(x) ifelse(x < 0, parse(text=paste0(x,"^o", "*S")), ifelse(x > 0, parse(text=paste0(x,"^o", "*N")),x))))
+    return(scale_y_continuous("Latitude", breaks = ybreaks, labels = ylabels, expand = c(0, 0), ...))
+} 
+
+# plot
 base = ggplot() +
     coord_fixed(xlim=c(xmin, xmax), ylim=c(ymin, ymax), ratio=1) + 
     labs(x = "Longitude", y = "Latitude", fill = "CPUE") +
     theme_bw() +
+    scale_x_longitude(xmin=xmin, xmax=xmax, step=5) +
+    scale_y_latitude(ymin=ymin, ymax=ymax, step=5) +
     theme(plot.title = element_text(hjust = 0.5, size = 20),
           axis.title = element_text(face = "bold"),
           axis.text = element_text(size = 16, colour = "black"),
@@ -113,9 +114,11 @@ base + labs(title = tit_max) +
                  geom="polygon", binwidth=0.005, na.rm=TRUE) +
     scale_fill_gradient(low="white", high="red", breaks=seq(0, 1, 0.5), limits=c(0, 1)) +
     geom_polygon(aes(x=long, y=lat, group=group), data=mp, fill="grey", colour="black")
-ggsave(filename=paste0(sp, "_high.eps"), path=paste0(wd, "output\\figures\\suppl\\diversity"), 
+ggsave(filename=paste0(sp, "_", variable, "_high.eps"), 
+       path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
        device="eps", scale=1.5)
-ggsave(filename=paste0(sp, "_high.png"), path=paste0(wd, "output\\figures\\suppl\\diversity"), 
+ggsave(filename=paste0(sp, "_", variable, "_high.png"), 
+       path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
        device="png", scale=1.5)
 
 # spatial distribution at the lowest age diversity
@@ -124,9 +127,11 @@ base + labs(title = tit_min) +
                  geom="polygon", binwidth=0.005, na.rm=TRUE) +
     scale_fill_gradient(low="white", high="blue", breaks=seq(0, 1, 0.5), limits=c(0, 1)) +
     geom_polygon(aes(x=long, y=lat, group=group), data=mp, fill="grey", colour="black")
-ggsave(filename=paste0(sp, "_low.eps"), path=paste0(wd, "output\\figures\\suppl\\diversity"), 
+ggsave(filename=paste0(sp, "_", variable, "_low.eps"), 
+       path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
        device="eps", scale=1.5)
-ggsave(filename=paste0(sp, "_low.png"), path=paste0(wd, "output\\figures\\suppl\\diversity"), 
+ggsave(filename=paste0(sp, "_", variable, "_low.png"), 
+       path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
        device="png", scale=1.5)
 
 

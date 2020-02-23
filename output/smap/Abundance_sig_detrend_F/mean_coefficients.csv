@@ -1,7 +1,0 @@
-"","F","CV.CPUE","AgeDiversity","Abundance","AMO","SBT","CVofSBT","SST","theta","rho","pvalue","model_name","E"
-"1",-0.8758,NA,NA,0.1133,NA,NA,NA,NA,0,0.4912,0.0278,"Gadus morhua1",2
-"2",-0.399,0.1356,-0.4064,0.1278,-0.1585,-0.2231,0.3374,NA,0,0.3344,0.1496,"Merlangius merlangus1",7
-"3",-0.153,NA,NA,0.9607,NA,NA,NA,NA,1.5,0.5246,0.0085,"Pollachius virens1",2
-"4",NA,0.7508,NA,-2.179,NA,NA,NA,NA,8,0.2713,0.222,"Scomber scombrus1",2
-"5",NA,NA,NA,-0.0142,NA,NA,NA,-0.295,0,-0.0234,0.9219,"Sprattus sprattus1",2
-"6",NA,NA,NA,0.4849,NA,0.0306,NA,NA,0,0.2239,0.2928,"Trisopterus esmarkii1",2
