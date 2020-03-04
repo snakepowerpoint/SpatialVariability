@@ -1,9 +1,11 @@
 ## config 
-dataset = "data_std"  # change to "data_per_year" if fishing mortality is included
-detrend_fun = detrend_sig
-lags = 8  # change to "4" if fishing mortality is included
+dataset = "data_std"  # swtich to "data_per_year" if yearly data is used
+lags = 8  # swtich to "4" if time series is short (when fishing mortality is included)
+is_robust_each_lag = FALSE  # swtich to "TRUE" if time series is short
+
 time_ccm = 200
-is_full = FALSE 
+detrend_fun = detrend_sig
+is_full = FALSE
 
 library_var = "CV.CPUE"
 #library_var = "AgeDiversity"

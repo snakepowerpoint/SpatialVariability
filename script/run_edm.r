@@ -156,221 +156,195 @@ EDM_lib_var = lapply(EDM_lib_var, FUN=function(item, lib_var=library_var){
     generateSmapData(item, data=data, lib_var=lib_var, is_full=is_full)
 })
 
-# perform S-map analysis
-EDM_lib_var = lapply(EDM_lib_var, function(item){
-    if (is.na(item$Smap1)){
+# perform S-map analysis 
+# (if time series is short, skip this step and conduct the following robustness test)
+if (!is_robust_each_lag){
+    # perform S-map  
+    EDM_lib_var = lapply(EDM_lib_var, function(item){
+        if (is.na(item$Smap1)){
+            return(item)
+        }
+        
+        smap_model_index = grep("Smap", names(item))
+        num_smap_model = length(smap_model_index)
+        for (i in 1:num_smap_model){
+            data = item[[smap_model_index[i]]]$data
+            smap_result_list = performSmap(data)
+            
+            item[[smap_model_index[i]]]$coefficients = smap_result_list$coefficients
+            item[[smap_model_index[i]]]$rho = smap_result_list$rho
+            item[[smap_model_index[i]]]$pvalue = smap_result_list$pvalue
+            item[[smap_model_index[i]]]$theta = smap_result_list$theta
+        }
+        
         return(item)
-    }
+    })
     
-    smap_model_index = grep("Smap", names(item))
-    num_smap_model = length(smap_model_index)
-    for (i in 1:num_smap_model){
-        data = item[[smap_model_index[i]]]$data
-        smap_result_list = performSmap(data)
+    
+    ## Save S-map results
+    # mean of S-map coefficients over time
+    smap_results_list = lapply(EDM_lib_var, function(item){
+        smap_model = grep("Smap", names(item))
+        num_smap_model = length(smap_model)
         
-        item[[smap_model_index[i]]]$coefficients = smap_result_list$coefficients
-        item[[smap_model_index[i]]]$rho = smap_result_list$rho
-        item[[smap_model_index[i]]]$pvalue = smap_result_list$pvalue
-        item[[smap_model_index[i]]]$theta = smap_result_list$theta
-    }
-    
-    return(item)
-})
-
-
-## plot S-map coefficients
-plot_mode = "box"  # 'series' or 'box'
-
-setwd(paste0(wd, 'script'))
-source("utils/plot.r")
-
-lapply(EDM_lib_var, function(item, colors=cl, shapes=sh, mode=plot_mode){
-    if (is.na(item$Smap1)[1]){
-        return(NULL)
-    }
-    
-    species = item$species
-    smap_model = grep("Smap", names(item))
-    num_smap_model = length(smap_model)
-    for (i in 1:num_smap_model){
-        smapplot = plotSmapCoeff(smap_result_list=item[[smap_model[i]]],
-                                 species=species,
-                                 colors=colors,
-                                 shapes=shapes,
-                                 mode=mode)
-        save_path = paste0(wd, smap_path, mode, "_", species, i)
+        meanSmap = list()
+        for (idx in 1:num_smap_model){
+            model = item[[smap_model[idx]]]
+            if (length(model) > 1){
+                meanSmap[[idx]] = colMeans(model$coefficients, na.rm = TRUE)
+                meanSmap[[idx]] = data.frame(t(meanSmap[[idx]]))
+                meanSmap[[idx]]$rho = model$rho
+                meanSmap[[idx]]$pvalue = model$pvalue
+                meanSmap[[idx]]$theta = model$theta
+            }
+        }
         
-        file_name_eps = paste0(save_path, ".eps")
-        ggsave(filename=file_name_eps, plot=smapplot, width=9, height=6, units="in")
-        file_name_png = paste0(save_path, ".png")
-        ggsave(filename=file_name_png, plot=smapplot, width=9, height=6, units="in")
-    }
-})
-
-if (plot_mode == "series"){
-    smap_timeseries_legend(lib_var=library_var, colors=cl, shapes=sh)
-} else if (plot_mode == "box"){
-    smap_boxplot_legend(lib_var=library_var, colors=cl)
-}
-
-file_name_eps = paste0(wd, smap_path, plot_mode, "_legend", ".eps")
-ggsave(filename = file_name_eps)
-
-
-
-### Save S-map results
-# mean of S-map coefficients over time
-smap_results_list = lapply(EDM_lib_var, function(item){
-    smap_model = grep("Smap", names(item))
-    num_smap_model = length(smap_model)
+        return(meanSmap)
+    })
     
-    meanSmap = list()
-    for (idx in 1:num_smap_model){
-        model = item[[smap_model[idx]]]
-        if (length(model) > 1){
-            meanSmap[[idx]] = colMeans(model$coefficients, na.rm = TRUE)
-            meanSmap[[idx]] = data.frame(t(meanSmap[[idx]]))
-            meanSmap[[idx]]$rho = model$rho
-            meanSmap[[idx]]$pvalue = model$pvalue
-            meanSmap[[idx]]$theta = model$theta
+    # store S-map coefficients as data frame
+    library(gtools)
+    
+    smap_results_df = data.frame()
+    for (species in smap_results_list){
+        for (list in species){
+            data = data.frame(as.list(list))
+            smap_results_df = smartbind(smap_results_df, data)
         }
     }
     
-    return(meanSmap)
-})
-
-# store S-map coefficients as data frame
-library(gtools)
-
-smap_results_df = data.frame()
-for (species in smap_results_list){
-    for (list in species){
-        data = data.frame(as.list(list))
-        smap_results_df = smartbind(smap_results_df, data)
+    # re-arrange columns
+    smap_var = c(variables, "theta", "rho", "pvalue")
+    order.var = smap_var[sort(match(names(smap_results_df), smap_var))]
+    smap_results_df = smap_results_df[, order.var, drop = FALSE]
+    smap_results_df = as.data.frame(apply(smap_results_df, 2, round, digits = 4))
+    
+    # label each model
+    model_names = c()
+    for (idx in 1:length(smap_results_list)){
+        if (length(smap_results_list[[idx]]) > 0){
+            num_model = length(smap_results_list[[idx]])
+            model_name = paste0(names(smap_results_list)[idx], 1:num_model)
+            model_names = c(model_names, model_name)
+        }
     }
+    smap_results_df$model_name = model_names
+    row.names(smap_results_df) = NULL
+    
+    # embedding dimension of target variable
+    embed_dim = c()
+    for (species in EDM_lib_var){
+        sub_model_names = gsub("[[:digit:]]+", "", x=model_names)
+        if (species$species %in% sub_model_names){
+            dims = species$E_feasible$peaks
+            embed_dim = c(embed_dim, dims)
+        }
+    }
+    smap_results_df$E = embed_dim
+    
+    # save smap results
+    write.csv(x=smap_results_df, file=paste0(wd, smap_path, "mean_coefficients.csv"))
 }
 
-# re-arrange columns
-smap_var = c(variables, "theta", "rho", "pvalue")
-order.var = smap_var[sort(match(names(smap_results_df), smap_var))]
-smap_results_df = smap_results_df[, order.var, drop = FALSE]
-smap_results_df = as.data.frame(apply(smap_results_df, 2, round, digits = 4))
-
-# label each model
-model_names = c()
-for (idx in 1:length(smap_results_list)){
-    if (length(smap_results_list[[idx]]) > 0){
-        num_model = length(smap_results_list[[idx]])
-        model_name = paste0(names(smap_results_list)[idx], 1:num_model)
-        model_names = c(model_names, model_name)
-    }
-}
-smap_results_df$model_name = model_names
-row.names(smap_results_df) = NULL
-
-# embedding dimension of target variable
-embed_dim = c()
-for (species in EDM_lib_var){
-    sub_model_names = gsub("[[:digit:]]+", "", x=model_names)
-    if (species$species %in% sub_model_names){
-        dims = species$E_feasible$peaks
-        embed_dim = c(embed_dim, dims)
-    }
-}
-smap_results_df$E = embed_dim
-
-# save smap results
-write.csv(x=smap_results_df, file=paste0(wd, smap_path, "mean_coefficients.csv"))
+# If one wants to plot S-map results, 
+# please run "plot.r" in script directory after S-map analysis
 
 
 
-### Robustness test on S-map
+### Robustness test on S-map (for relatively long time series)
 setwd(paste0(wd, 'script'))
 source("robustness_test.r")
 
-robustness_list = lapply(EDM_lib_var, 
-                         FUN=function(species, lib_var=library_var, use_all_data=is_full){
-    # exclude colunm of "Year" and "Quarter"
-    data = species[[dataset]]
-    data = subset(data, select=names(data) %ni% c("Year", "Quarter"))
-    
-    if (nrow(species$E_feasible) > 0){
-        tar_vars = as.character(species$ccm_most_significant$target)
-        tar_vars = as.character(tar_vars)
-        if (use_all_data){
-            lags = rep(0, length(tar_vars))
-        } else {
-            lags = species$ccm_most_significant$tar.lag
-            lags = abs(lags)
-        }
-        data = subset(data, select = c(lib_var, tar_vars))
-        
-        robust_output = data.frame(0)
-        for (emb_dim in species$E_feasible$peaks){
-            output = robust(data, dim_lib_var=emb_dim, lags=lags)
-            robust_output = merge(robust_output, output, all=TRUE)
-        }
-        return(robust_output)
-    } else {
-        return(NULL)
-    }
-    
-})
-
-# merge results of robustness test for all species
-robustness_table = data.frame(0)
-for (i in 1:length(robustness_list)){
-    data = robustness_list[[i]]
-    if (!is.null(data)){
-        data = round(data, digits=4)
-        data$species = names(robustness_list)[i]
-        robustness_table = merge(robustness_table, data, all=TRUE, sort=FALSE)
-    }
+if (!is_robust_each_lag){
+    robustness_list = lapply(EDM_lib_var, 
+                             FUN=function(species, lib_var=library_var, use_all_data=is_full){
+                                 # exclude colunm of "Year" and "Quarter"
+                                 data = species[[dataset]]
+                                 data = subset(data, select=names(data) %ni% c("Year", "Quarter"))
+                                 
+                                 if (nrow(species$E_feasible) > 0){
+                                     tar_vars = as.character(species$ccm_most_significant$target)
+                                     tar_vars = as.character(tar_vars)
+                                     if (use_all_data){
+                                         lags = rep(0, length(tar_vars))
+                                     } else {
+                                         lags = species$ccm_most_significant$tar.lag
+                                         lags = abs(lags)
+                                     }
+                                     data = subset(data, select = c(lib_var, tar_vars))
+                                     
+                                     robust_output = data.frame(0)
+                                     for (emb_dim in species$E_feasible$peaks){
+                                         output = robust(data, dim_lib_var=emb_dim, lags=lags)
+                                         robust_output = merge(robust_output, output, all=TRUE)
+                                     }
+                                     return(robust_output)
+                                 } else {
+                                     return(NULL)
+                                 }
+                             })
 }
 
-robust_var = c(variables, "theta", "rho", "pvalue", "species")
-order.var = robust_var[sort(match(names(robustness_table), robust_var))]
-robustness_table = robustness_table[, order.var, drop = FALSE]
-
-# save robustness test results
-filename = paste0(wd, robust_path, "all_species.csv")
-write.csv(x=robustness_table, file=filename, row.names = FALSE)
-
-
-
-### Robustness test on different lags
-robust_lag_list = lapply(EDM_lib_var, FUN=function(species){
-    if (nrow(species$E_feasible) > 0){
-        raw_data = species[[dataset]]
-        embed_dim = species$E_feasible$peaks[1]
-        lib_var = library_var
-        ccm_most_sig = species$ccm_most_significant
-        ccm_sig = species$ccm_sig
-        
-        print(species$species)
-        return(smap_each_lag(raw_data=raw_data, 
-                             embed_dim=embed_dim, 
-                             lib_var=lib_var, 
-                             ccm_most_sig=ccm_most_sig, 
-                             ccm_sig=ccm_sig))
-    } else {
-        return(NULL)
+if (!is_robust_each_lag){
+    # merge results of robustness test for all species
+    robustness_table = data.frame(0)
+    for (i in 1:length(robustness_list)){
+        data = robustness_list[[i]]
+        if (!is.null(data)){
+            data = round(data, digits=4)
+            data$species = names(robustness_list)[i]
+            robustness_table = merge(robustness_table, data, all=TRUE, sort=FALSE)
+        }
     }
-})
-
-robust_lag_list = lapply(robust_lag_list, FUN=function(species){
-    robust_var = c("lag", "lag_var", variables, "theta", "rho", "pvalue")
-    order.var = robust_var[sort(match(names(species), robust_var))]
-    sorted_table = species[, order.var, drop = FALSE]
     
-    return(sorted_table)
-})
+    robust_var = c(variables, "theta", "rho", "pvalue", "species")
+    order.var = robust_var[sort(match(names(robustness_table), robust_var))]
+    robustness_table = robustness_table[, order.var, drop = FALSE]
+    
+    # save robustness test results
+    filename = paste0(wd, robust_path, "all_species.csv")
+    write.csv(x=robustness_table, file=filename, row.names = FALSE)
+}
+    
 
-# saving robustness test results
-for (i in 1:length(robust_lag_list)){
-    species = names(robust_lag_list)[i]
-    filename = paste0(wd, robust_path, species, "_each_lag.csv")
-    write.csv(x=robust_lag_list[[i]], file=filename, row.names=FALSE)
+
+### Robustness test on different lags (for relatively short time series)
+if (is_robust_each_lag){
+    robust_lag_list = lapply(EDM_lib_var, FUN=function(species){
+        if (nrow(species$E_feasible) > 0){
+            raw_data = species[[dataset]]
+            embed_dim = species$E_feasible$peaks[1]
+            lib_var = library_var
+            ccm_most_sig = species$ccm_most_significant
+            ccm_sig = species$ccm_sig
+            
+            print(species$species)
+            return(smap_each_lag(raw_data=raw_data, 
+                                 embed_dim=embed_dim, 
+                                 lib_var=lib_var, 
+                                 ccm_most_sig=ccm_most_sig, 
+                                 ccm_sig=ccm_sig))
+        } else {
+            return(NULL)
+        }
+    })
+}
+
+if (is_robust_each_lag){
+    robust_lag_list = lapply(robust_lag_list, FUN=function(species){
+        robust_var = c("lag", "lag_var", variables, "theta", "rho", "pvalue")
+        order.var = robust_var[sort(match(names(species), robust_var))]
+        sorted_table = species[, order.var, drop = FALSE]
+        
+        return(sorted_table)
+    })
+    
+    # saving robustness test results
+    for (i in 1:length(robust_lag_list)){
+        species = names(robust_lag_list)[i]
+        filename = paste0(wd, robust_path, species, "_each_lag.csv")
+        write.csv(x=robust_lag_list[[i]], file=filename, row.names=FALSE)
+    }
 }
 
 
