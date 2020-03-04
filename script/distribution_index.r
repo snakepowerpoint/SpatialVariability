@@ -42,13 +42,13 @@ ymax <- round(max(cpue$lat)) + 1
 cpue = split(cpue, f = cpue$Species)
 
 
-### Select year & quarter that have the highest and lowest age diversity
-sp = species_list[7]
+### Select year & quarter that have the highest and lowest indicator
+sp = species_list[2]
 data_sp = compiled_data[[sp]]
 cpue_sp = cpue[[sp]]
 
 names(data_sp)
-variable = "CVofSST"
+variable = "Shannon.age"
 
 time_max = data_sp[which.max(data_sp[[variable]]), c("Year", "Quarter")]
 time_min = data_sp[which.min(data_sp[[variable]]), c("Year", "Quarter")]
@@ -58,7 +58,7 @@ cpue_sp_max = subset(cpue_sp, subset=cpue_sp$Year == time_max$Year &
 cpue_sp_min = subset(cpue_sp, subset=cpue_sp$Year == time_min$Year & 
                          cpue_sp$Quarter == time_min$Quarter)
 
-# normalize to [0, 1]
+# normalize to [0,1]
 cpue_sp_max$CPUE = cpue_sp_max$CPUE / max(cpue_sp_max$CPUE)
 cpue_sp_min$CPUE = cpue_sp_min$CPUE / max(cpue_sp_min$CPUE)
 
@@ -134,34 +134,3 @@ ggsave(filename=paste0(sp, "_", variable, "_low.png"),
        path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
        device="png", scale=1.5)
 
-
-
-### Appendix
-## map
-library(rworldmap)
-newmap <- getMap(resolution = "low")
-plot(newmap, xlim = c(-20, 59), ylim = c(35, 71), asp = 1)
-
-## filled.contour
-filled.contour(x,y,z, plot.axes={axis(1); axis(2); map(add=TRUE, interior=FALSE)} )
-
-## ggplot 
-# use original data instead of interpolated data
-base + 
-    stat_contour(aes(x=cpue_sp_max$lon, y=cpue_sp_max$lat, z=cpue_sp_max$CPUE, fill = ..level..), 
-                 geom="polygon", binwidth=0.01, na.rm=TRUE) +
-    scale_fill_gradientn(colors = c("white", "red")) +
-    geom_polygon(aes(x=long, y=lat, group=group), data=mp, fill="grey", colour="black")
-
-base + 
-    stat_contour(aes(x=cpue_sp_min$lon, y=cpue_sp_min$lat, z=cpue_sp_min$CPUE, fill = ..level..), 
-                 geom="polygon", binwidth=0.01, na.rm=TRUE) +
-    scale_fill_gradientn(colors = c("white", "blue")) +
-    geom_polygon(aes(x=long, y=lat, group=group), data=mp, fill="grey", colour="black")
-
-# scale_fill_gradientn
-base + labs(title = tit_min) + 
-    stat_contour(aes(x=inter_min$x, y=inter_min$y, z=inter_min$z, fill=..level..), 
-                 geom="polygon", binwidth=0.005, na.rm=TRUE) +
-    scale_fill_gradientn(colors=c("white", "blue"), breaks=seq(0, 1, 0.5), limits=c(0, 1)) +
-    geom_polygon(aes(x=long, y=lat, group=group), data=mp, fill="grey", colour="black")
