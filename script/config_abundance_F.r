@@ -7,7 +7,7 @@ time_ccm = 200
 detrend_fun = detrend_sig
 is_full = FALSE
 
-library_var = "Aundance"
+library_var = "Abundance"
 
 
 ## path for the results of ccm 
