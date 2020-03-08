@@ -5,6 +5,7 @@ This repository is an implementaion of the research work **Causal effects of pop
 - For readers who want to quickly implement the empirical dynamic modelling (EDM), please refer to **Quickly Getting Started**. 
 - For readers who want to implement the EDM from scratch, please refer to **Step by Step Analysis**.
 
+
 The repository contains:
 * Source code
 
@@ -42,7 +43,7 @@ Please install these R-packages via instruction `install.packages(xxx)` in R, wh
 
 # Quickly Getting Started
 1. Open `run_edm.r` in R, and set the working directory `wd` to the path where you save the repository.
-2. Change config in `run_emd.r` based on different experimental scenarios.
+2. Change config in `run_emd.r` according to different experimental scenarios.
 
     In this study, we have four experimental scenarios:
 
@@ -77,7 +78,7 @@ Please install these R-packages via instruction `install.packages(xxx)` in R, wh
 
     The script combines the biological data and environmental data together, and saves the compiled data (named by species name) in `output` directory.
 
-4. Open `rum_edm.r`, and change the config based on different experimental scenarios. 
+4. Open `rum_edm.r`, and change the config according to different experimental scenarios. 
 
     As mentioned in **Quickly Getting Started** above, we have four experimental scenarios in this study (i.e. `config_cv.r`, `config_age_F.r`, `config_abundance_F.r` and `config_cv_F.r`).
     
