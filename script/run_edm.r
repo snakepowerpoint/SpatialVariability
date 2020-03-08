@@ -3,7 +3,7 @@ wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
 setwd(paste0(wd, "script\\"))
 source("utils\\edm.r")
 setwd(paste0(wd, "script\\"))
-source("config.r")
+source("config_cv.r")
 
 
 # detrend
@@ -339,12 +339,28 @@ if (is_robust_each_lag){
         return(sorted_table)
     })
     
-    # saving robustness test results
+    # saving robustness test results for each species
     for (i in 1:length(robust_lag_list)){
         species = names(robust_lag_list)[i]
         filename = paste0(wd, robust_path, species, "_each_lag.csv")
         write.csv(x=robust_lag_list[[i]], file=filename, row.names=FALSE)
     }
+    
+    # aggregate results
+    library(dplyr)
+    
+    robust_list = lapply(robust_lag_list, function(results){
+        if (!is.null(results)){
+            return(aggregate_each_lag(results))
+        } else {
+            return(results)
+        }
+    })
+    robust_table = Reduce(bind_rows, robust_list)
+    robust_table['species'] = names(robust_list)[!sapply(robust_list, is.null)]
+    
+    filename = paste0(wd, robust_path, "all_species.csv")
+    write.csv(x=robust_table, file=filename, row.names=FALSE)
 }
 
 

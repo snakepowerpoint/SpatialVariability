@@ -116,3 +116,21 @@ smap_each_lag = function(raw_data, embed_dim, lib_var, ccm_most_sig, ccm_sig){
     return(output)
 }
 
+
+## aggregate results of robustness test on each lag
+aggregate_each_lag = function(results){
+    # keep significant results
+    sig_results = subset(results, subset=results[['pvalue']] < 0.1)
+    
+    # remove duplicated results
+    results_for_var = subset(sig_results, select=-c(lag, lag_var, theta, rho, pvalue))
+    duplicated_row = duplicated(results_for_var)
+    results_for_var = results_for_var[!duplicated_row, , drop=FALSE]
+    
+    # take average results for each variable
+    if (nrow(results_for_var) > 0){
+        return(colMeans(results_for_var))
+    } else {
+        return(NULL)
+    }
+}
