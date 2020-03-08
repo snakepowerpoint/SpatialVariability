@@ -38,69 +38,62 @@ Previous versions are available at https://cran.r-project.org/bin/windows/base/o
 * rnaturalearthdata 0.1.0
 * scatterpie 0.1.2
 
-Please install these R-packages via instruction ```install.packages(xxx)``` in R, where ```xxx``` is package name.
+Please install these R-packages via instruction `install.packages(xxx)` in R, where `xxx` is package name.
 
 # Quickly Getting Started
-1. Open ```run_edm.r``` in R, and set the working directory ```wd``` to the path where you save the repository. 
-2. Open ```config.r``` in R, and change the variables based on different experimental scenarios.
- In this study, we have the following four experimental scenarios:
-```
-# First
-dataset = "data_std"  
-lags = 8
-is_robust_each_lag = FALSE
-library_var = "CV.CPUE"
-```
-```
-# Second
-dataset = "data_per_year"  
-lags = 4
-is_robust_each_lag = TRUE
-library_var = "AgeDiversity"
-```
-```
-# Third
-dataset = "data_per_year"  
-lags = 4
-is_robust_each_lag = TRUE
-library_var = "Abundance"
-```
-```
-# Fourth
-dataset = "data_per_year"  
-lags = 4
-is_robust_each_lag = FALSE
-library_var = "CV.CPUE"
-```
-3. Run all the code in ```run_edm.r``` for each experimental scenario.
+1. Open `run_edm.r` in R, and set the working directory `wd` to the path where you save the repository.
+2. Change config in `run_emd.r` based on different experimental scenarios.
 
-Results of CCM, S-map, and robustness test will be saved in the path you specified in ```config.r``` (i.e., ```ccm_path```, ```smap_path```, and ```robust_path```). Before conducting a new experimental scenario, remember to remove all defined variables.
+    In this study, we have four experimental scenarios:
+
+    ```
+    # First
+    source("config_cv.r")
+    ```
+    ```
+    # Second
+    source("config_age_F.r")
+    ```
+    ```
+    # Third
+    source("config_abundance_F.r")
+    ```
+    ```
+    # Fourth
+    source("config_cv_F.r")
+    ```
+3. Run all the code in `run_edm.r` for each experimental scenario.
+
+    Results of CCM, S-map, and robustness test will be saved in the path specified in config file (i.e., `ccm_path`, `smap_path`, and `robust_path`). Before conducting a new experimental scenario, remember to remove all defined variables.
 
 # Step by Step Analysis
-1. Download raw data from the repository on Zenodo, and put them in ```data``` directory accordingly.
-2. Run ```compile_cpue_subarea_data.r```, ```compile_age_data.r```, ```amo.r```, ```sst.r```, ```bottomT.r```, ```fishingM.r```. 
+1. Download raw data from the repository on Zenodo, and put them in `data` directory accordingly.
 
-These scripts process the raw data, and save the processed data in ```output``` directory.
+2. Run `compile_cpue_subarea_data.r`, `compile_age_data.r`, `amo.r`, `sst.r`, `bottomT.r` and `fishingM.r` to process raw data.
 
-3. Run ```combine_all_data_for_edm.r```. 
+    These scripts process the raw data, and save the compiled data in `output` directory.
 
-The script combines the biological data and environmental data together, and saves the combined data (by species name) in ```output``` directory.
+3. Run `combine_all_data_for_edm.r`. 
 
-4. Open ```config.r```, and change the variables based on different experimental scenarios. 
+    The script combines the biological data and environmental data together, and saves the compiled data (named by species name) in `output` directory.
 
-Because fishing mortality is yearly data, any analyses including fishing mortality should be based on the compiled yearly datasets. Morover, one should use a smaller lag (4 in this study) to do EDM since the short time-series length of yearly data may not be enough to do state-space reconstruction in EDM, especially when the lagged time series are considered.
+4. Open `rum_edm.r`, and change the config based on different experimental scenarios. 
 
-5. Open ```run_edm.r```. Run all the code before CCM analysis.
-6. Run ```run_ccm.r``` to do CCM analysis.
+    As mentioned in **Quickly Getting Started** above, we have four experimental scenarios in this study (i.e. `config_cv.r`, `config_age_F.r`, `config_abundance_F.r` and `config_cv_F.r`).
+    
+    Because fishing mortality is yearly data, any analyses including fishing mortality should be based on the compiled yearly dataset. Morover, we use a smaller lag (4 in this study) to perform EDM on yearly dataset because the short time series in yearly dataset may not be enough for state-space reconstruction, especially when the lagged time series are considered.
 
-We run CCM 100 times to minimize the effect of bias resulting from the randomness in CCM analysis. Results of CCM will be saved in the path you specified in ```config.r```.
+5. Run all the code before CCM analysis part in `run_edm.r`.
 
-7. Go back to ```run_edm.r```, and continue the code of CCM to process the results of CCM analysis.
-8. Run the code of S-map in ```run_edm.r```. 
-9. Run the code of robustness test in ```run_edm.r```.
-10. Change the variables in ```config.r``` (e.g. dataset, library variable or lags), and repeat step 5-9.
+6. Run `run_ccm.r` to perform CCM analysis.
 
-To be continued...
+    We run CCM 200 times to mitigate the effect of bias resulting from the randomness in CCM analysis. Results of CCM will be saved in the path specified in config file.
+
+7. Go back to `run_edm.r`, and continue the code of CCM to process the results of CCM analysis.
+
+8. Run the code of S-map in `run_edm.r` to perform S-map analysis. 
+
+9. Run the code of robustness test in `run_edm.r` to perform robustness test.
 
 # Contact
 If you find any bugs or have any questions about the implementation, pelease contact us via r03241220@ntu.edu.tw
