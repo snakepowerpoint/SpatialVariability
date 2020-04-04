@@ -4,7 +4,6 @@ setwd(paste0(wd, "data"))
 age = read.csv("compiled_age_data.csv", header = TRUE)
 
 
-
 ### data processing
 # align latitude and longitude to each subarea
 num = rep(28:52, each = 19)

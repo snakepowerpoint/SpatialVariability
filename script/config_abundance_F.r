@@ -1,30 +1,27 @@
 ## config 
-dataset = "data_std"  # change to "data_per_year" if fishing mortality is included
-detrend_fun = detrend_sig
-lags = 8  # change to "4" if fishing mortality is included
-time_ccm = 100
-is_full = FALSE  # change to "TRUE" if a full time series is used in S-map analysis
+dataset = "data_per_year"
+lags = 4
+is_robust_each_lag = TRUE
 
-library_var = "CV.CPUE"
-#library_var = "AgeDiversity"
-#library_var = "Abundance"
+time_ccm = 200
+detrend_fun = detrend_sig
+is_full = FALSE
+
+library_var = "Abundance"
 
 
 ## path for the results of ccm 
-ccm_path = paste0("output\\ccm\\", library_var, "_sig_detrend\\")
-#ccm_path = paste0("output\\ccm\\", library_var, "_sig_detrend_F\\")
+ccm_path = paste0("output\\ccm\\", library_var, "_sig_detrend_F\\")
 dir.create(file.path(wd, ccm_path), showWarnings = FALSE)
 
 
 ## path for the results of smap
-smap_path = paste0("output\\smap\\", library_var, "_sig_detrend\\")
-#smap_path = paste0("output\\smap\\", library_var, "_sig_detrend_F\\")
+smap_path = paste0("output\\smap\\", library_var, "_sig_detrend_F\\")
 dir.create(file.path(wd, smap_path), showWarnings = FALSE)
 
 
 ## path for the results of robustness tes
-robust_path = paste0("output\\robustness_test\\", library_var, "_sig_detrend\\")
-#robust_path = paste0("output\\robustness_test\\", library_var, "_sig_detrend_F\\")
+robust_path = paste0("output\\robustness_test\\", library_var, "_sig_detrend_F\\")
 dir.create(file.path(wd, robust_path), showWarnings = FALSE)
 
 
