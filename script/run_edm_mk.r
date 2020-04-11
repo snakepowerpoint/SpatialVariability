@@ -3,7 +3,7 @@ wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
 setwd(paste0(wd, "script\\"))
 source("utils\\edm_mk.r")
 setwd(paste0(wd, "script\\"))
-source("config.r")
+source("config_cv.r")
 
 
 # detrend
