@@ -13,15 +13,21 @@ lapply(EDM_lib_var, function(item, colors=cl, shapes=sh, mode=plot_mode){
     smap_model = grep("Smap", names(item))
     num_smap_model = length(smap_model)
     for (i in 1:num_smap_model){
+        save_path = paste0(wd, smap_path, mode, "_", species, i, ".eps")
+        
+        setEPS()
+        postscript(save_path)
+        showtext_begin() ## call this function after opening a device
         smapplot = plotSmapCoeff(smap_result_list=item[[smap_model[i]]],
                                  species=species,
                                  colors=colors,
                                  shapes=shapes,
                                  mode=mode)
-        save_path = paste0(wd, smap_path, mode, "_", species, i)
+        print(smapplot)
+        dev.off()
         
-        file_name_eps = paste0(save_path, ".eps")
-        ggsave(filename=file_name_eps, plot=smapplot, width=9, height=6, units="in")
+        #file_name_eps = paste0(save_path, ".eps")
+        #ggsave(filename=file_name_eps, plot=smapplot, width=9, height=6, units="in")
         file_name_png = paste0(save_path, ".png")
         ggsave(filename=file_name_png, plot=smapplot, width=9, height=6, units="in")
     }
