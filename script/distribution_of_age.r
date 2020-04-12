@@ -1,3 +1,6 @@
+library(ggplot2)
+library(maps)
+
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
 setwd(paste0(wd, "data"))
 
@@ -19,9 +22,6 @@ age$lat = coordinate$Lat[pos]
 
 
 ## prepare map
-library(ggplot2)
-library(maps)
-
 # map
 mp = fortify(map(fill = TRUE, plot = FALSE))
 
@@ -113,6 +113,7 @@ library(rnaturalearthdata)
 library(scatterpie)
 library(extrafont)
 library(showtext)
+library(viridis)
 
 
 age_species = split(age, age$Species)  # split data by species
@@ -146,43 +147,61 @@ world <- ne_countries(scale = "medium", returnclass = "sf")
 plot.map = function(data, species, map_plot){
     tit <- bquote(italic(.(species)))
     # colors = c(1:11)
-    colors = c('black', 'red', 'green3', 'blue3', 'cyan', 'chocolate4', 
-               'orange', 'grey', 'blueviolet', 'yellow', 'magenta')
+    #colors = c('black', 'red', 'green3', 'blue3', 'cyan', 'chocolate4', 
+    #           'orange', 'grey', 'blueviolet', 'yellow', 'magenta')
+    colors = plasma(11, direction = -1)
     col_to_plot = grep("Age", colnames(data), value = TRUE)
     
     age_plot = map_plot + 
         geom_scatterpie(aes(x=lon, y=lat, group=Subarea, r=0.25), data=data, cols=col_to_plot) +
-        xlab("Longitude") + ylab("Latitude") + ggtitle(tit) +
+        ggtitle(tit) +
         theme(panel.grid.major = element_line(colour = 'transparent'),
               panel.background = element_blank(),
-              panel.border = element_rect(colour = "black", fill = NA, size = 1.5),
+              panel.border = element_rect(colour = "black", fill = NA, size = 1.1),
               plot.title = element_text(hjust = 0.5, size = 24),
               axis.text.x = element_text(colour = "black", size = 18),
               axis.text.y = element_text(colour = "black", size = 18),
-              axis.title = element_text(size = 18, face = "bold"), 
+              axis.title = element_blank(),
+              #axis.title = element_text(size = 18, face = "bold"),
+              text = element_text(family='Arial'),
               legend.position = "none",  # add this when legends are needed
               legend.title = element_text(size = 16),
               legend.text = element_text(size = 16)) + 
         scale_fill_manual(values=colors, labels=col_to_plot) +
-        scale_x_longitude(xmin=xmin, xmax=xmax, step=2) +
-        scale_y_latitude(ymin=ymin, ymax=ymax, step=2)
+        scale_x_longitude(xmin=xmin, xmax=xmax, step=5) +
+        scale_y_latitude(ymin=ymin, ymax=ymax, step=5)
     
     return(age_plot)
 }
 
 # save example
-data = age_species$`Pleuronectes platessa`
+data = age_species$`Clupea harengus`
 data[is.na(data)] = 0
 
-age_plot = plot.map(data, 'Pleuronectes platessa', Amap)
-#print(age_plot)
-ggsave(filename=paste0('Pleuronectes platessa', ".png"),
+age_plot = plot.map(data, 'Clupea harengus', Amap)
+print(age_plot)
+
+ggsave(filename=paste0('Clupea harengus', ".png"),
        plot=age_plot,
        path=paste0(wd, "output\\figures\\suppl"),
        scale=1.5)
 
 # plot age-specific spatial distribution for each species
 # save as .eps
+for (species in names(age_species)){
+    data = age_species[[species]]
+    data[is.na(data)] = 0
+    save_path = paste0(wd, "output\\figures\\suppl\\", species, ".eps")
+    
+    setEPS()
+    postscript(save_path)
+    showtext_begin() ## call this function after opening a device
+    age_plot = plot.map(data, species, Amap)
+    print(age_plot)
+    dev.off()
+}
+
+# alternative save as .eps
 for (species in names(age_species)){
     data = age_species[[species]]
     data[is.na(data)] = 0
@@ -198,7 +217,8 @@ for (species in names(age_species)){
 for (species in names(age_species)){
     data = age_species[[species]]
     data[is.na(data)] = 0
-    plot.map(data, species)
+    
+    plot.map(data, species, Amap)
     ggsave(filename = paste0(species, ".png"),
            path = paste0(wd, "output\\figures\\suppl"), 
            device = "eps")
