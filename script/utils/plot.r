@@ -37,13 +37,15 @@ gplot_ccm_result = function(species_list){
     data$library = factor(data$library, levels=var_order)
     species = species_list$species
     
-    ggplot(aes(x = tar.lag, y = rho, color=library), data = data) + theme_bw() +
+    ggplot(aes(x = tar.lag, y = rho, color=library), data = data) + 
         geom_hline(aes(yintercept = 0), linetype = 'dashed', color = 'black') +
         geom_point(size = 5) +
         geom_segment(aes(x=tar.lag-0.1, y=rho+sd.rho, xend=tar.lag+0.1, yend=rho+sd.rho), size=1) +
         geom_segment(aes(x=tar.lag-0.1, y=rho-sd.rho, xend=tar.lag+0.1, yend=rho-sd.rho), size=1) +
         geom_segment(aes(x=tar.lag, y=rho-sd.rho, xend=tar.lag, yend=rho+sd.rho), size=1) +
-        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        theme(panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank(), 
+              panel.background = element_blank(),
               panel.border = element_rect(size = 1.1),
               axis.line = element_line(color = 'black'), 
               axis.title = element_text(color = 'black', size = 16),
@@ -77,6 +79,7 @@ plotSmapCoeff = function(
     
     # coefficients of S-map model without library variable and constant
     data_of_coeff = smap_result_list$coefficients
+    N = nrow(na.omit(data_of_coeff))
     data_of_coeff = data_of_coeff[target_vars] 
     
     rho = round(smap_result_list$rho, 2)
@@ -100,7 +103,8 @@ plotSmapCoeff = function(
                                     cl=cl, 
                                     sh=sh, 
                                     species=species, 
-                                    rho=rho))
+                                    rho=rho,
+                                    N=N))
     } else if (mode == "box"){
         return(smap_boxplot(data=coeff.melt, 
                             lib_var=library_var, 
@@ -108,14 +112,16 @@ plotSmapCoeff = function(
                             sh=sh,
                             n_var=length(unique(colors)), 
                             species=species, 
-                            rho=rho))
+                            rho=rho,
+                            N=N))
     } else {
         stop("mode must be either 'series' or 'box'")
     }
 }
 
 # plot time series
-smap_timeseries_plot = function(data, lib_var, cl, sh, species, rho){
+smap_timeseries_plot = function(data, lib_var, cl, sh, species, rho, N){
+    max_value = max(abs(data$value), na.rm = TRUE)
     scaleFUN = function(x){sprintf("%.2f", x)}
     
     smaptime = 
@@ -123,17 +129,20 @@ smap_timeseries_plot = function(data, lib_var, cl, sh, species, rho){
         geom_point(size=4) +
         geom_line(size=1) +
         geom_hline(yintercept=0, linetype='dashed') +
-        theme_bw() + 
-        theme(plot.title = element_text(hjust = 0.5, size = 28),
-              axis.title = element_text(size = 24, face = "bold"),
+        theme(plot.title = element_text(hjust = 0.5, size = 24),
+              axis.title = element_text(size = 22, face = "bold"),
               axis.text = element_text(size = 20, colour = "black"),
-              panel.border = element_rect(size = 1.1),
+              panel.border = element_rect(size = 1.1, fill = NA, colour = 'black'),
+              panel.background = element_blank(),
               panel.grid.major = element_blank(), 
               panel.grid.minor = element_blank(),
-              legend.position = "none") + 
+              aspect.ratio = 0.8, 
+              legend.position = "none",
+              text = element_text(family='Arial')) + 
         labs(x = 'Time', y = 'S-map coefficients') +
-        ggtitle(bquote(paste(italic(.(species)), ", ", rho, " = ", .(rho)))) +
-        scale_y_continuous(labels=scaleFUN) +
+        ggtitle(bquote(paste(italic(.(species)), ", ", rho, " = ", .(rho), " ",
+                             italic("N"), " = ", .(N)))) +
+        scale_y_continuous(labels=scaleFUN, limits=c(-max_value, max_value)) +
         scale_shape_manual(values=unique(sh)) +
         scale_color_manual(values=unique(cl)) +
         scale_fill_manual(values=unique(cl))
@@ -166,31 +175,45 @@ smap_timeseries_legend = function(lib_var, colors, shapes){
 }
 
 # plot box plot
-smap_boxplot = function(data, lib_var, cl, sh, n_var, species, rho){
+smap_boxplot = function(data, lib_var, cl, sh, n_var, species, rho, N){
+    max_value = max(abs(data$value), na.rm = TRUE)
+    tar_vars = levels(data$variable)
+    if (length(grep("SST", tar_vars)) > 0){
+        limits = c("AgeDiversity", "Abundance", "AMO", "SST", "CVofSST")    
+    } else {
+        limits = c("AgeDiversity", "Abundance", "AMO", "SBT", "CVofSBT")
+    }
+    print(limits)
+    print(tar_vars)
     n = length(unique(data$variable))
     scaleFUN = function(x){sprintf("%.2f", x)}
     
     smapbox = 
-        ggplot(data=data, aes(x=variable, y=value, color=variable)) + 
-        geom_boxplot(na.rm=T, lwd=1, width=0.7*n/n_var) + 
+        ggplot(data=data, aes(x=variable, y=value)) + 
+        geom_boxplot(aes(color=variable), na.rm=T, lwd=1, width=0.6, outlier.shape=NA) + 
+        geom_point(aes(color=variable)) +
         geom_hline(yintercept=0, linetype='dashed') +
-        theme_bw() + 
-        theme(plot.title = element_text(hjust = 0.5, size = 18),
-              axis.title = element_text(size = 18, face = "bold"),
+        theme(plot.title = element_text(hjust = 0.5, size = 24),
+              axis.title = element_text(size = 22, face = 'bold'),
               axis.title.x = element_blank(), 
-              axis.text = element_text(size = 18, colour = "black"),
-              panel.border = element_rect(size = 1.1),
+              axis.text = element_text(size = 20, colour = 'black'),
+              panel.border = element_rect(size = 1.1, fill = NA, colour = 'black'),
+              panel.background = element_blank(),
               panel.grid.major = element_blank(), 
               panel.grid.minor = element_blank(),
-              legend.position = "none") + 
+              aspect.ratio = 1.1, 
+              legend.position = "none",
+              text = element_text(family='Arial')) + 
         labs(y = 'S-map coefficients') +
-        ggtitle(bquote(paste(italic(.(species)), ", ", rho, " = ", .(rho)))) + 
-        scale_y_continuous(labels=scaleFUN) +
-        scale_x_discrete(labels=unique(data$variable)) + 
+        ggtitle(bquote(paste(italic(.(species)), ", ", rho, " = ", .(rho), " ",
+                             italic("N"), " = ", .(N)))) + 
+        scale_y_continuous(labels=scaleFUN, limits=c(-max_value, max_value)) +
+        coord_cartesian(xlim = c(1, 5)) +
+        scale_x_discrete(breaks=tar_vars, labels=tar_vars, limits=limits) + 
         scale_color_manual(values=unique(cl))
-    
     return(smapbox)
 }
+
 
 # legend for box plot
 smap_boxplot_legend = function(lib_var, colors){
