@@ -1,6 +1,7 @@
 library(Rcpp)
 library(devtools)
 library(rEDM)
+library(viridis)
 
 
 
@@ -132,7 +133,8 @@ determineCausality = function(data, dim.list, species, lags=8, num_samples=100, 
             ccm_var[current_row, "tar.lag"] = lag
             ccm_var[current_row, "rho"] = cv_x_m$rho[n]
             ccm_var[current_row, "sd.rho"] = cv_x_m$sd.rho[n]
-            ccm_var[current_row, "kendall.tau"] = cor.test(cv_x_m$lib_size, cv_x_m$rho, method = 'kendall')$p.value
+            ccm_var[current_row, "kendall.tau"] = cor.test(cv_x_m$lib_size, cv_x_m$rho, 
+                                                           alternative = 'greater', method = 'kendall')$p.value
             ccm_var[current_row, "significance"] = t.test(subset(cv_x, subset = lib_size==cv_x_m$lib_size[n])$rho,
                                                           alternative = "greater")$p.value
         } 
@@ -226,3 +228,14 @@ performSmap = function(data_for_smap){
     return(list(coefficients = coeff, rho = rho, pvalue = pvalue, theta = theta))
 }
 
+
+## plot S-map coefficients
+# give each variable a unique color and shape
+# variable: c('F', 'spatial CV', 'age diversity','abundance',
+#             'AMO', 'SBT'(SST), 'CV of BT'(CV of SST))
+# color: black, yellow, red, green, blue, light blue, purple : c(1,7,2,3,4,5,6)
+# shape: crossbox, cross, circle(s), circle, diamond(s), triangle(s), triangle: c(7,4,21,1,23,24,2)
+variables = c("F", "CV.CPUE", "AgeDiversity", "Abundance", "AMO", 
+              "SBT", "CVofSBT", "SST", "CVofSST")
+cl = c(1,7,2,3,4,5,6,5,6)
+sh = c(7,4,21,1,23,24,2,24,2)
