@@ -265,8 +265,12 @@ performSmap = function(data_for_smap){
     
     # test on the significance of rho
     n_pred = block_lnlp_output$num_pred
-    t = rho*sqrt(n_pred-2)/sqrt(1-rho^2)  
-    pvalue = 2*pt(-abs(t), df = n_pred-2)
+    t = rho*sqrt(n_pred-2)/sqrt(1-rho^2)
+    if (t >= 0){
+        pvalue = 1 - pt(t, df = n_pred-2)    
+    } else {
+        pvalue = pt(t, df = n_pred-2)
+    }
     
     theta = round(theta.opt, 2)
     
