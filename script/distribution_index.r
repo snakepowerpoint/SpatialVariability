@@ -2,8 +2,15 @@ library(akima)
 library(ggplot2)
 library(ggmap)
 library(maps)
+library(extrafont)
+library(sysfonts)
+library(showtext)
 
 wd = "C:\\Users\\b9930\\Google ¶³ºÝµwºÐ\\publication\\SpatialVariability\\"
+
+loadfonts(device = "win")
+# add the Arial font
+font_add("Arial", regular = "arial.ttf", bold = "arialbd.ttf", italic = "ariali.ttf", bolditalic = "arialbi.ttf")
 
 
 ### load compiled data
@@ -48,7 +55,8 @@ data_sp = compiled_data[[sp]]
 cpue_sp = cpue[[sp]]
 
 names(data_sp)
-variable = "Shannon.age"
+variable = "Shannon.age"  # Shannon.age, Total.CPUE, AMO, MeanBT, CVofBT, MeanSST, CVofSST
+var_name = "age diversity"  # age diversity, abundance, AMO, temperature, cv of temperature
 
 time_max = data_sp[which.max(data_sp[[variable]]), c("Year", "Quarter")]
 time_min = data_sp[which.min(data_sp[[variable]]), c("Year", "Quarter")]
@@ -72,10 +80,10 @@ inter_min = interp2xyz(interp(cpue_sp_min$lon, cpue_sp_min$lat, cpue_sp_min$CPUE
 mp = fortify(map(fill = TRUE, plot = FALSE))
 
 # figure parameters
-max_val = round(max(data_sp[[variable]]), 4)
-min_val = round(min(data_sp[[variable]]), 4)
-tit_max = bquote(italic(.(paste0(sp, ','))) ~ .(variable) ~ "=" ~ .(max_val))
-tit_min = bquote(italic(.(paste0(sp, ','))) ~ .(variable) ~ "=" ~ .(min_val))
+max_val = round(max(data_sp[[variable]]), 2)
+min_val = round(min(data_sp[[variable]]), 2)
+tit_max = bquote(paste(italic(.(sp)), ', ', .(var_name), " = ", .(max_val)))
+tit_min = bquote(paste(italic(.(sp)), ', ', .(var_name), " = ", .(min_val)))
 
 # breaks on x and y axis
 scale_x_longitude <- function(xmin=-180, xmax=180, step=1, ...) {
@@ -92,45 +100,66 @@ scale_y_latitude <- function(ymin=-90, ymax=90, step=0.5, ...) {
 # plot
 base = ggplot() +
     coord_fixed(xlim=c(xmin, xmax), ylim=c(ymin, ymax), ratio=1) + 
-    labs(x = "Longitude", y = "Latitude", fill = "CPUE") +
-    theme_bw() +
     scale_x_longitude(xmin=xmin, xmax=xmax, step=5) +
     scale_y_latitude(ymin=ymin, ymax=ymax, step=5) +
-    theme(plot.title = element_text(hjust = 0.5, size = 20),
-          axis.title = element_text(face = "bold"),
-          axis.text = element_text(size = 16, colour = "black"),
-          axis.title.x = element_text(size = 18),
-          axis.title.y = element_text(size = 18),
-          legend.text = element_text(size = 16),
-          legend.title = element_text(size = 16),
-          panel.grid.major = element_line(colour = 'transparent'),
+    theme(plot.title = element_text(hjust = 0.5, size = 22),
+          axis.title = element_blank(),
+          #axis.title = element_text(size = 20, face = "bold"),
+          axis.text = element_text(size = 20, colour = "black"),
+          legend.text = element_text(size = 18),
+          legend.title = element_text(size = 18),
+          panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
-          panel.border = element_rect(colour = "black", fill = NA, size = 1.5))
+          panel.border = element_rect(colour = "black", fill = NA, size = 1.5),
+          text = element_text(family='Arial'))
 
 # spatial distribution at the highest age diversity
-base + labs(title = tit_max) +
+setEPS(width=8, height=8)
+save_path = paste0(wd, "output\\figures\\suppl\\distribution_index\\", sp, "_", variable, "_high.eps")
+postscript(save_path)
+showtext_begin() ## call this function after opening a device
+
+base + labs(x = "", y = "", fill = "Abundance", title = tit_max) +
     stat_contour(aes(x=inter_max$x, y=inter_max$y, z=inter_max$z, fill = ..level..), 
                  geom="polygon", binwidth=0.005, na.rm=TRUE) +
     scale_fill_gradient(low="white", high="red", breaks=seq(0, 1, 0.5), limits=c(0, 1)) +
     geom_polygon(aes(x=long, y=lat, group=group), data=mp, fill="grey", colour="black")
-ggsave(filename=paste0(sp, "_", variable, "_high.eps"), 
-       path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
-       device="eps", scale=1.5)
+
+dev.off()
+
 ggsave(filename=paste0(sp, "_", variable, "_high.png"), 
        path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
        device="png", scale=1.5)
 
+### alternative saving
+'''
+ggsave(filename=paste0(sp, "_", variable, "_high.eps"), 
+       path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
+       device="eps", scale=1.5)
+'''
+
 # spatial distribution at the lowest age diversity
-base + labs(title = tit_min) + 
+setEPS(width=8, height=8)
+save_path = paste0(wd, "output\\figures\\suppl\\distribution_index\\", sp, "_", variable, "_low.eps")
+postscript(save_path)
+showtext_begin() ## call this function after opening a device
+
+base + labs(x = "", y = "", fill = "Abundance", title = tit_min) +
     stat_contour(aes(x=inter_min$x, y=inter_min$y, z=inter_min$z, fill=..level..), 
                  geom="polygon", binwidth=0.005, na.rm=TRUE) +
     scale_fill_gradient(low="white", high="blue", breaks=seq(0, 1, 0.5), limits=c(0, 1)) +
     geom_polygon(aes(x=long, y=lat, group=group), data=mp, fill="grey", colour="black")
-ggsave(filename=paste0(sp, "_", variable, "_low.eps"), 
-       path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
-       device="eps", scale=1.5)
+
+dev.off()
+
 ggsave(filename=paste0(sp, "_", variable, "_low.png"), 
        path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
        device="png", scale=1.5)
 
+### alternative saving
+'''
+ggsave(filename=paste0(sp, "_", variable, "_low.eps"), 
+       path=paste0(wd, "output\\figures\\suppl\\distribution_index"), 
+       device="eps", scale=1.5)
+'''
