@@ -38,6 +38,7 @@ Previous versions are available at https://cran.r-project.org/bin/windows/base/o
 * rnaturalearth 0.1.0
 * rnaturalearthdata 0.1.0
 * scatterpie 0.1.2
+* viridis 0.5.1
 
 Please install these R-packages via instruction `install.packages(xxx)` in R, where `xxx` is package name.
 
